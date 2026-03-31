@@ -1516,7 +1516,7 @@ fn execute_sleep(input: SleepInput) -> SleepOutput {
 
 fn execute_powershell(input: PowerShellInput) -> std::io::Result<runtime::BashCommandOutput> {
     let _ = &input.description;
-    let shell = detect_powershell_shell();
+    let shell = detect_powershell_shell()?;
     execute_shell_command(
         shell,
         &input.command,
@@ -1525,11 +1525,16 @@ fn execute_powershell(input: PowerShellInput) -> std::io::Result<runtime::BashCo
     )
 }
 
-fn detect_powershell_shell() -> &'static str {
+fn detect_powershell_shell() -> std::io::Result<&'static str> {
     if command_exists("pwsh") {
-        "pwsh"
+        Ok("pwsh")
+    } else if command_exists("powershell") {
+        Ok("powershell")
     } else {
-        "powershell"
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "PowerShell executable not found (expected `pwsh` or `powershell` in PATH)",
+        ))
     }
 }
 
@@ -1565,7 +1570,7 @@ fn execute_shell_command(
             interrupted: false,
             is_image: None,
             background_task_id: Some(child.id().to_string()),
-            backgrounded_by_user: Some(false),
+            backgrounded_by_user: Some(true),
             assistant_auto_backgrounded: Some(false),
             dangerously_disable_sandbox: None,
             return_code_interpretation: None,
@@ -1730,12 +1735,17 @@ fn parse_skill_description(contents: &str) -> Option<String> {
 mod tests {
     use std::io::{Read, Write};
     use std::net::{SocketAddr, TcpListener};
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex, OnceLock};
     use std::thread;
     use std::time::Duration;
 
     use super::{execute_tool, mvp_tool_specs};
     use serde_json::json;
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
 
     #[test]
     fn exposes_mvp_tools() {
@@ -2095,6 +2105,7 @@ mod tests {
 
     #[test]
     fn powershell_runs_via_stub_shell() {
+        let _guard = env_lock().lock().expect("env lock");
         let dir = std::env::temp_dir().join(format!(
             "clawd-pwsh-bin-{}",
             std::time::SystemTime::now()
@@ -2113,7 +2124,7 @@ printf 'pwsh:%s' "$1"
 "#,
         )
         .expect("write script");
-        std::process::Command::new("chmod")
+        std::process::Command::new("/bin/chmod")
             .arg("+x")
             .arg(&script)
             .status()
@@ -2127,12 +2138,46 @@ printf 'pwsh:%s' "$1"
         )
         .expect("PowerShell should succeed");
 
+        let background = execute_tool(
+            "PowerShell",
+            &json!({"command": "Write-Output hello", "run_in_background": true}),
+        )
+        .expect("PowerShell background should succeed");
+
         std::env::set_var("PATH", original_path);
         let _ = std::fs::remove_dir_all(dir);
 
         let output: serde_json::Value = serde_json::from_str(&result).expect("json");
         assert_eq!(output["stdout"], "pwsh:Write-Output hello");
         assert!(output["stderr"].as_str().expect("stderr").is_empty());
+
+        let background_output: serde_json::Value = serde_json::from_str(&background).expect("json");
+        assert!(background_output["backgroundTaskId"].as_str().is_some());
+        assert_eq!(background_output["backgroundedByUser"], true);
+        assert_eq!(background_output["assistantAutoBackgrounded"], false);
+    }
+
+    #[test]
+    fn powershell_errors_when_shell_is_missing() {
+        let _guard = env_lock().lock().expect("env lock");
+        let original_path = std::env::var("PATH").unwrap_or_default();
+        let empty_dir = std::env::temp_dir().join(format!(
+            "clawd-empty-bin-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("time")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&empty_dir).expect("create empty dir");
+        std::env::set_var("PATH", empty_dir.display().to_string());
+
+        let err = execute_tool("PowerShell", &json!({"command": "Write-Output hello"}))
+            .expect_err("PowerShell should fail when shell is missing");
+
+        std::env::set_var("PATH", original_path);
+        let _ = std::fs::remove_dir_all(empty_dir);
+
+        assert!(err.contains("PowerShell executable not found"));
     }
 
     struct TestServer {
