@@ -386,6 +386,9 @@ fn inspect_session(target: &str) {
     println!("- size_bytes: {bytes}");
     println!("- messages: {}", session.messages.len());
     println!("- total_tokens: {}", usage.total_tokens());
+    for line in usage.summary_lines_for_model("- usage", None) {
+        println!("{line}");
+    }
     println!("- preview: {}", session_preview(&session));
 
     if let Some(user_text) = latest_text_for_role(&session, MessageRole::User) {
@@ -499,7 +502,7 @@ impl LiveCli {
             self.runtime.usage().turns(),
             self.runtime.estimated_tokens()
         );
-        for line in usage.summary_lines("usage") {
+        for line in usage.summary_lines_for_model("usage", Some(&self.model)) {
             println!("{line}");
         }
     }
@@ -507,11 +510,11 @@ impl LiveCli {
     fn print_turn_usage(&self, cumulative_usage: TokenUsage) {
         let latest = self.runtime.usage().current_turn_usage();
         println!("\nTurn usage:");
-        for line in latest.summary_lines("  latest") {
+        for line in latest.summary_lines_for_model("  latest", Some(&self.model)) {
             println!("{line}");
         }
         println!("Cumulative usage:");
-        for line in cumulative_usage.summary_lines("  total") {
+        for line in cumulative_usage.summary_lines_for_model("  total", Some(&self.model)) {
             println!("{line}");
         }
     }
