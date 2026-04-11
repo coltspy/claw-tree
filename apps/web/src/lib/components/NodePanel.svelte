@@ -64,6 +64,10 @@
 
 	const selectedTools = $derived(new Set(selectedNode?.data.allowedTools ?? []));
 	const isPauseNode = $derived(selectedNode?.data.nodeType === 'pause');
+	const hasIncomingEdge = $derived.by(() => {
+		if (!selectedNode) return false;
+		return workflow.edges.some((e) => e.target === selectedNode.id);
+	});
 
 	function toggleTool(tool: ClawTool) {
 		if (!selectedNode) return;
@@ -179,6 +183,43 @@
 			</div>
 
 			{#if !isPauseNode}
+				<div>
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] font-medium text-zinc-400">Continue session</span>
+						<button
+							type="button"
+							role="switch"
+							aria-label="Continue session from upstream node"
+							aria-checked={Boolean(node.data.resumeFromPrevious)}
+							disabled={!hasIncomingEdge}
+							onclick={() =>
+								updateNodeData(node.id, {
+									resumeFromPrevious: !node.data.resumeFromPrevious
+								})}
+							class="relative h-4 w-7 rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-40 {node
+								.data.resumeFromPrevious
+								? 'border-emerald-600 bg-emerald-600/40'
+								: 'border-zinc-700 bg-zinc-800'}"
+						>
+							<span
+								class="absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all {node.data
+									.resumeFromPrevious
+									? 'left-3.5 bg-emerald-300'
+									: 'left-0.5 bg-zinc-500'}"
+							></span>
+						</button>
+					</div>
+					<p class="mt-1 text-[10px] text-zinc-600">
+						{#if !hasIncomingEdge}
+							connect an upstream node to enable
+						{:else if node.data.resumeFromPrevious}
+							this node continues the upstream session — shared memory, cheaper via prompt cache
+						{:else}
+							spawns a fresh claw session (default)
+						{/if}
+					</p>
+				</div>
+
 				<div>
 					<label for="node-model" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
 						Model

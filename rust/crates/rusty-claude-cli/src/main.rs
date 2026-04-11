@@ -226,6 +226,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             base_commit,
             reasoning_effort,
             allow_broad_cwd,
+            resume_ref,
         } => {
             enforce_broad_cwd_policy(allow_broad_cwd, output_format)?;
             run_stale_base_preflight(base_commit.as_deref());
@@ -240,7 +241,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 None
             };
             let effective_prompt = merge_prompt_with_stdin(&prompt, stdin_context.as_deref());
-            let mut cli = LiveCli::new(model, true, allowed_tools, permission_mode)?;
+            let mut cli = match resume_ref.as_deref() {
+                Some(session_ref) => {
+                    LiveCli::resumed(session_ref, model, true, allowed_tools, permission_mode)?
+                }
+                None => LiveCli::new(model, true, allowed_tools, permission_mode)?,
+            };
             cli.set_reasoning_effort(reasoning_effort);
             cli.run_turn_with_output(&effective_prompt, output_format, compact)?;
         }
@@ -331,6 +337,7 @@ enum CliAction {
         base_commit: Option<String>,
         reasoning_effort: Option<String>,
         allow_broad_cwd: bool,
+        resume_ref: Option<String>,
     },
     Login {
         output_format: CliOutputFormat,
@@ -522,7 +529,24 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
             }
             "-p" => {
                 // Claw Code compat: -p "prompt" = one-shot prompt
-                let prompt = args[index + 1..].join(" ");
+                // claw-tree patch: pre-scan remaining args for --resume <val> / --resume=<val>
+                // so one-shot mode can continue an existing session.
+                let mut resume_ref: Option<String> = None;
+                let mut prompt_args: Vec<String> = Vec::new();
+                let mut scan = index + 1;
+                while scan < args.len() {
+                    if args[scan] == "--resume" && scan + 1 < args.len() {
+                        resume_ref = Some(args[scan + 1].clone());
+                        scan += 2;
+                    } else if args[scan].starts_with("--resume=") {
+                        resume_ref = Some(args[scan][9..].to_string());
+                        scan += 1;
+                    } else {
+                        prompt_args.push(args[scan].clone());
+                        scan += 1;
+                    }
+                }
+                let prompt = prompt_args.join(" ");
                 if prompt.trim().is_empty() {
                     return Err("-p requires a prompt string".to_string());
                 }
@@ -537,6 +561,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                     base_commit: base_commit.clone(),
                     reasoning_effort: reasoning_effort.clone(),
                     allow_broad_cwd,
+                    resume_ref,
                 });
             }
             "--print" => {
@@ -609,6 +634,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                     base_commit,
                     reasoning_effort,
                     allow_broad_cwd,
+                    resume_ref: None,
                 });
             }
         }
@@ -659,6 +685,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                     base_commit,
                     reasoning_effort: reasoning_effort.clone(),
                     allow_broad_cwd,
+                    resume_ref: None,
                 }),
                 SkillSlashDispatch::Local => Ok(CliAction::Skills {
                     args,
@@ -686,6 +713,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
                 base_commit: base_commit.clone(),
                 reasoning_effort: reasoning_effort.clone(),
                 allow_broad_cwd,
+                resume_ref: None,
             })
         }
         other if other.starts_with('/') => parse_direct_slash_cli_action(
@@ -709,6 +737,7 @@ fn parse_args(args: &[String]) -> Result<CliAction, String> {
             base_commit,
             reasoning_effort: reasoning_effort.clone(),
             allow_broad_cwd,
+            resume_ref: None,
         }),
     }
 }
@@ -833,6 +862,7 @@ fn parse_direct_slash_cli_action(
                     base_commit,
                     reasoning_effort: reasoning_effort.clone(),
                     allow_broad_cwd,
+                    resume_ref: None,
                 }),
                 SkillSlashDispatch::Local => Ok(CliAction::Skills {
                     args,
@@ -3731,6 +3761,7 @@ impl LiveCli {
         let system_prompt = build_system_prompt()?;
         let session_state = Session::new();
         let session = create_managed_session_handle(&session_state.session_id)?;
+        eprintln!("[claw-tree-session] {}", session.id);
         let runtime = build_runtime(
             session_state.with_persistence_path(session.path.clone()),
             &session.id,
@@ -3753,6 +3784,56 @@ impl LiveCli {
         };
         cli.persist_session()?;
         Ok(cli)
+    }
+
+    fn resumed(
+        session_ref: &str,
+        model: String,
+        enable_tools: bool,
+        allowed_tools: Option<AllowedToolSet>,
+        permission_mode: PermissionMode,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let system_prompt = build_system_prompt()?;
+        let session = resolve_session_reference(session_ref)?;
+        eprintln!("[claw-tree-session] {}", session.id);
+        let session_state = Session::load_from_path(&session.path)?;
+        let runtime = build_runtime(
+            session_state.with_persistence_path(session.path.clone()),
+            &session.id,
+            model.clone(),
+            system_prompt.clone(),
+            enable_tools,
+            true,
+            allowed_tools.clone(),
+            permission_mode,
+            None,
+        )?;
+        let cli = Self {
+            model,
+            allowed_tools,
+            permission_mode,
+            system_prompt,
+            runtime,
+            session,
+            prompt_history: Vec::new(),
+        };
+        cli.persist_session()?;
+        Ok(cli)
+    }
+
+    fn emit_tree_usage_marker(&self, usage: &runtime::TokenUsage) {
+        let cost = usage
+            .estimate_cost_usd_with_pricing(
+                pricing_for_model(&self.model)
+                    .unwrap_or_else(runtime::ModelPricing::default_sonnet_tier),
+            )
+            .total_cost_usd();
+        eprintln!(
+            "[claw-tree-usage] cost_usd={} input_tokens={} output_tokens={}",
+            format_usd(cost),
+            usage.input_tokens,
+            usage.output_tokens
+        );
     }
 
     fn set_reasoning_effort(&mut self, effort: Option<String>) {
@@ -3872,6 +3953,7 @@ impl LiveCli {
                     );
                 }
                 self.persist_session()?;
+                self.emit_tree_usage_marker(&summary.usage);
                 Ok(())
             }
             Err(error) => {
@@ -3909,6 +3991,7 @@ impl LiveCli {
         self.persist_session()?;
         let final_text = final_assistant_text(&summary);
         println!("{final_text}");
+        self.emit_tree_usage_marker(&summary.usage);
         Ok(())
     }
 
@@ -3947,6 +4030,7 @@ impl LiveCli {
                 )
             })
         );
+        self.emit_tree_usage_marker(&summary.usage);
         Ok(())
     }
 

@@ -68,7 +68,6 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 # 4. Run a prompt
 ./target/debug/claw prompt "say hello"
 ```
-
 > [!NOTE]
 > **Windows (PowerShell):** the binary is `claw.exe`, not `claw`. Use `.\target\debug\claw.exe` or run `cargo run -- prompt "say hello"` to skip the path lookup.
 

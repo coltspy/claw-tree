@@ -11,6 +11,8 @@ import { interpolatePrompt } from '$lib/engine/interpolate';
 import { evaluateCondition, ConditionError } from '$lib/engine/conditions';
 import type { Node, Edge } from '@xyflow/svelte';
 
+const META_MARKER = '<<<CLAW_TREE_META>>>';
+
 export interface PendingApproval {
 	nodeId: string;
 	label: string;
@@ -196,6 +198,10 @@ async function executeNode(
 		fullOrder
 	);
 
+	const resumeSessionId = fresh.data.resumeFromPrevious
+		? findUpstreamSessionId(fresh.id)
+		: undefined;
+
 	const maxAttempts =
 		fresh.data.failurePolicy === 'retry'
 			? Math.max(1, fresh.data.retryCount ?? 1) + 1
@@ -219,11 +225,13 @@ async function executeNode(
 				runId,
 				resolvedPrompt,
 				fresh.data,
+				resumeSessionId,
 				abortController!.signal
 			);
 			updateNodeData(node.id, {
 				status: 'done',
 				output: result.output,
+				sessionId: result.sessionId,
 				costUsd: result.costUsd,
 				inputTokens: result.inputTokens,
 				outputTokens: result.outputTokens
@@ -390,9 +398,35 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
 interface StreamResult {
 	output: string;
+	sessionId?: string;
 	costUsd?: number;
 	inputTokens?: number;
 	outputTokens?: number;
+}
+
+function findUpstreamSessionId(nodeId: string): string | undefined {
+	const incoming = workflow.edges.filter((e) => e.target === nodeId);
+	for (const edge of incoming) {
+		const source = workflow.nodes.find((n) => n.id === edge.source);
+		if (source?.data.sessionId) return source.data.sessionId;
+	}
+	return undefined;
+}
+
+function extractMeta(accumulated: string): {
+	visible: string;
+	meta: { sessionId?: string; costUsd?: number; inputTokens?: number; outputTokens?: number };
+} {
+	const idx = accumulated.lastIndexOf(META_MARKER);
+	if (idx === -1) return { visible: accumulated, meta: {} };
+	const visible = accumulated.slice(0, idx);
+	const jsonPart = accumulated.slice(idx + META_MARKER.length).trim();
+	try {
+		const parsed = JSON.parse(jsonPart.split('\n')[0]);
+		return { visible, meta: parsed };
+	} catch {
+		return { visible, meta: {} };
+	}
 }
 
 async function streamNode(
@@ -400,6 +434,7 @@ async function streamNode(
 	runId: string,
 	prompt: string,
 	nodeData: NodeData,
+	resumeSessionId: string | undefined,
 	signal: AbortSignal
 ): Promise<StreamResult> {
 	const response = await fetch('/api/run', {
@@ -410,7 +445,8 @@ async function streamNode(
 			model: nodeData.model,
 			permissionMode: nodeData.permissionMode,
 			allowedTools: nodeData.allowedTools,
-			outputFormat: nodeData.outputFormat
+			outputFormat: nodeData.outputFormat,
+			resumeSessionId
 		}),
 		signal
 	});
@@ -430,15 +466,24 @@ async function streamNode(
 		const { value, done } = await reader.read();
 		if (done) break;
 		accumulated += decoder.decode(value, { stream: true });
-		updateNodeData(nodeId, { output: accumulated });
-		updateNodeResult(runId, nodeId, { output: accumulated });
+		const { visible } = extractMeta(accumulated);
+		updateNodeData(nodeId, { output: visible });
+		updateNodeResult(runId, nodeId, { output: visible });
 	}
+
+	const { visible, meta } = extractMeta(accumulated);
 
 	if (nodeData.outputFormat === 'json') {
-		return parseJsonOutput(accumulated);
+		return { ...parseJsonOutput(visible), sessionId: meta.sessionId };
 	}
 
-	return { output: accumulated.trim() };
+	return {
+		output: visible.trim(),
+		sessionId: meta.sessionId,
+		costUsd: meta.costUsd,
+		inputTokens: meta.inputTokens,
+		outputTokens: meta.outputTokens
+	};
 }
 
 function parseJsonOutput(raw: string): StreamResult {

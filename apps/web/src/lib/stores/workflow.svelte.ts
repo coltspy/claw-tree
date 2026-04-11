@@ -7,6 +7,7 @@ import type {
 	ClawTool,
 	OutputFormat
 } from '$lib/types/nodes';
+import { canvas } from './canvas.svelte';
 
 export interface NodeData extends Record<string, unknown> {
 	label: string;
@@ -19,12 +20,14 @@ export interface NodeData extends Record<string, unknown> {
 	permissionMode?: ClawPermissionMode;
 	allowedTools?: ClawTool[];
 	outputFormat?: OutputFormat;
+	resumeFromPrevious?: boolean;
 	status: NodeStatus;
 	output?: string;
 	error?: string;
 	costUsd?: number;
 	inputTokens?: number;
 	outputTokens?: number;
+	sessionId?: string;
 }
 
 export interface EdgeData extends Record<string, unknown> {
@@ -75,15 +78,35 @@ export function setHistoryHooks(
 	recordHistoryDebouncedHook = debounced;
 }
 
-export function addNode(type: NodeType) {
+const SNAP = 20;
+
+function snap(value: number): number {
+	return Math.round(value / SNAP) * SNAP;
+}
+
+function gridSpawnPosition(): { x: number; y: number } {
+	const count = workflow.nodes.length;
+	return {
+		x: snap(100 + (count % 4) * 280),
+		y: snap(100 + Math.floor(count / 4) * 200)
+	};
+}
+
+export function addNodeAt(
+	type: NodeType,
+	position: { x: number; y: number },
+	options: { pan?: boolean } = {}
+) {
 	recordHistoryHook?.();
-	const offset = workflow.nodes.length * 40;
 	const { label, prompt } = NODE_DEFAULTS[type];
 
+	const snapped = { x: snap(position.x), y: snap(position.y) };
+	const id = crypto.randomUUID();
+
 	workflow.nodes.push({
-		id: crypto.randomUUID(),
+		id,
 		type: 'workflow',
-		position: { x: 160 + offset, y: 140 + offset },
+		position: snapped,
 		data: {
 			label,
 			nodeType: type,
@@ -93,6 +116,14 @@ export function addNode(type: NodeType) {
 			status: 'idle'
 		}
 	});
+
+	if (options.pan && canvas.helpers) {
+		canvas.helpers.focusNode(id);
+	}
+}
+
+export function addNode(type: NodeType) {
+	addNodeAt(type, gridSpawnPosition(), { pan: true });
 }
 
 export function updateNodeData(id: string, patch: Partial<NodeData>) {

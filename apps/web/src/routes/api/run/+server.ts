@@ -9,12 +9,45 @@ const DEFAULT_BIN = process.platform === 'win32'
 
 const CLAW_BIN = process.env.CLAW_BIN ?? DEFAULT_BIN;
 
+const ANSI_CSI = /\u001b\[[0-9;?]*[a-zA-Z]/g;
+const ANSI_DEC = /\u001b[78]/g;
+
+function stripAnsi(text: string): string {
+	return text.replace(ANSI_CSI, '').replace(ANSI_DEC, '');
+}
+
 interface RunBody {
 	prompt: string;
 	model?: string;
 	permissionMode?: 'read-only' | 'workspace-write' | 'danger-full-access';
 	allowedTools?: string[];
 	outputFormat?: 'text' | 'json';
+	resumeSessionId?: string;
+}
+
+export const META_MARKER = '<<<CLAW_TREE_META>>>';
+const SESSION_RE = /\[claw-tree-session\]\s+(\S+)/;
+const USAGE_RE =
+	/\[claw-tree-usage\]\s+cost_usd=\$?([\d.]+)\s+input_tokens=(\d+)\s+output_tokens=(\d+)/;
+
+interface ClawMeta {
+	sessionId?: string;
+	costUsd?: number;
+	inputTokens?: number;
+	outputTokens?: number;
+}
+
+function parseMetaFromStderr(stderr: string): ClawMeta {
+	const meta: ClawMeta = {};
+	const session = stderr.match(SESSION_RE);
+	if (session) meta.sessionId = session[1];
+	const usage = stderr.match(USAGE_RE);
+	if (usage) {
+		meta.costUsd = parseFloat(usage[1]);
+		meta.inputTokens = parseInt(usage[2], 10);
+		meta.outputTokens = parseInt(usage[3], 10);
+	}
+	return meta;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -40,6 +73,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (body.allowedTools && body.allowedTools.length > 0) {
 		args.push('--allowedTools', body.allowedTools.join(','));
 	}
+	if (body.resumeSessionId) {
+		args.push('--resume', body.resumeSessionId);
+	}
 
 	args.push('-p', body.prompt);
 
@@ -50,13 +86,27 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 
 			const encoder = new TextEncoder();
+			let stdoutBuffer = '';
+			let stderrBuffer = '';
+
+			const processStdout = (text: string): string => {
+				stdoutBuffer += text;
+				stdoutBuffer = stdoutBuffer.replace(/\u001b7[\s\S]*?\u001b8/g, '');
+				const pendingIdx = stdoutBuffer.lastIndexOf('\u001b7');
+				const emit = pendingIdx === -1 ? stdoutBuffer : stdoutBuffer.slice(0, pendingIdx);
+				stdoutBuffer = pendingIdx === -1 ? '' : stdoutBuffer.slice(pendingIdx);
+				return stripAnsi(emit);
+			};
 
 			child.stdout.on('data', (chunk: Buffer) => {
-				controller.enqueue(new Uint8Array(chunk));
+				const clean = processStdout(chunk.toString('utf8'));
+				if (clean.length > 0) {
+					controller.enqueue(encoder.encode(clean));
+				}
 			});
 
 			child.stderr.on('data', (chunk: Buffer) => {
-				controller.enqueue(encoder.encode(`[stderr] ${chunk.toString()}`));
+				stderrBuffer += stripAnsi(chunk.toString('utf8'));
 			});
 
 			child.on('error', (err) => {
@@ -67,8 +117,25 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 
 			child.on('close', (code) => {
+				if (stdoutBuffer.length > 0) {
+					const flushed = stripAnsi(
+						stdoutBuffer.replace(/\u001b7[\s\S]*?\u001b8/g, '')
+					);
+					if (flushed.length > 0) controller.enqueue(encoder.encode(flushed));
+					stdoutBuffer = '';
+				}
+				const meta = parseMetaFromStderr(stderrBuffer);
+				controller.enqueue(
+					encoder.encode(`\n${META_MARKER}${JSON.stringify(meta)}\n`)
+				);
 				if (code !== 0 && code !== null) {
-					controller.enqueue(encoder.encode(`\n[exit ${code}]`));
+					const info = stderrBuffer
+						.replace(SESSION_RE, '')
+						.replace(USAGE_RE, '')
+						.trim();
+					controller.enqueue(
+						encoder.encode(`\n[exit ${code}]${info ? `: ${info}` : ''}`)
+					);
 				}
 				controller.close();
 			});
