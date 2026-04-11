@@ -1,16 +1,48 @@
 <script lang="ts">
 	import StatusIndicator from './StatusIndicator.svelte';
-	import { workflow, clearWorkflow } from '$lib/stores/workflow.svelte';
+	import { workflow, clearWorkflow, loadWorkflow } from '$lib/stores/workflow.svelte';
 	import { execution, runWorkflow, cancelWorkflow } from '$lib/stores/execution.svelte';
 
 	let serverStatus = $state<'connected' | 'disconnected' | 'checking'>('checking');
+	let serverVersion = $state<string | null>(null);
 
 	const nodeCount = $derived(workflow.nodes.length);
 	const canRun = $derived(nodeCount > 0 && !execution.running);
 	const hasErrors = $derived(execution.errors.length > 0);
 
+	const HEALTH_POLL_MS = 10_000;
+
+	async function checkHealth() {
+		try {
+			const response = await fetch('/api/health');
+			if (response.ok) {
+				const body = (await response.json()) as { version?: string };
+				serverStatus = 'connected';
+				serverVersion = body.version ?? null;
+			} else {
+				serverStatus = 'disconnected';
+				serverVersion = null;
+			}
+		} catch {
+			serverStatus = 'disconnected';
+			serverVersion = null;
+		}
+	}
+
+	$effect(() => {
+		checkHealth();
+		const interval = setInterval(checkHealth, HEALTH_POLL_MS);
+		return () => clearInterval(interval);
+	});
+
+	let fileInput: HTMLInputElement | null = $state(null);
+
 	function handleSave() {
-		const data = JSON.stringify(workflow, null, 2);
+		const data = JSON.stringify(
+			{ nodes: workflow.nodes, edges: workflow.edges },
+			null,
+			2
+		);
 		const blob = new Blob([data], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -18,6 +50,27 @@
 		a.download = 'workflow.clawtree.json';
 		a.click();
 		URL.revokeObjectURL(url);
+	}
+
+	async function handleFileChange(event: Event) {
+		const target = event.currentTarget as HTMLInputElement;
+		const file = target.files?.[0];
+		target.value = '';
+		if (!file) return;
+
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			const result = loadWorkflow(data);
+			if (!result.success) {
+				execution.errors = [{ message: `Load failed: ${result.error}` }];
+			} else {
+				execution.errors = [];
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			execution.errors = [{ message: `Load failed: ${message}` }];
+		}
 	}
 </script>
 
@@ -30,8 +83,22 @@
 
 	<div class="flex items-center gap-4">
 		<span class="text-xs text-zinc-500">{nodeCount} {nodeCount === 1 ? 'node' : 'nodes'}</span>
-		<StatusIndicator status={serverStatus} />
+		<StatusIndicator status={serverStatus} version={serverVersion} />
 		<div class="flex items-center gap-2">
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept=".json,application/json"
+				onchange={handleFileChange}
+				class="hidden"
+			/>
+			<button
+				type="button"
+				onclick={() => fileInput?.click()}
+				class="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+			>
+				Load
+			</button>
 			<button
 				type="button"
 				onclick={clearWorkflow}

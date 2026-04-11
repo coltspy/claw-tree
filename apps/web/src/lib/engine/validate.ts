@@ -1,10 +1,12 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { NodeData } from '$lib/stores/workflow.svelte';
+import type { NodeData, EdgeData } from '$lib/stores/workflow.svelte';
 import { topologicalSort, CycleError } from './toposort';
 import { extractReferences } from './interpolate';
+import { isConditionValid } from './conditions';
 
 export interface ValidationError {
 	nodeId?: string;
+	edgeId?: string;
 	message: string;
 }
 
@@ -50,6 +52,20 @@ export function validateWorkflow(
 					message: `"${n.data.label}" references unknown node: ${ref}`
 				});
 			}
+		}
+	}
+
+	for (const e of edges) {
+		const condition = (e.data as EdgeData | undefined)?.condition;
+		if (!condition) continue;
+		const result = isConditionValid(condition);
+		if (result !== true) {
+			const sourceLabel =
+				nodes.find((n) => n.id === e.source)?.data.label ?? e.source;
+			errors.push({
+				edgeId: e.id,
+				message: `Edge from "${sourceLabel}" has invalid condition: ${result}`
+			});
 		}
 	}
 

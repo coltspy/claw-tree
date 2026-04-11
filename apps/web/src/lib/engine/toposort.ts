@@ -7,6 +7,34 @@ export class CycleError extends Error {
 	}
 }
 
+export function groupByDepth<T extends Record<string, unknown>>(
+	ordered: Node<T>[],
+	edges: Edge[]
+): Node<T>[][] {
+	const byId = new Map(ordered.map((n) => [n.id, n]));
+	const depth = new Map<string, number>();
+	const incoming = new Map<string, string[]>();
+
+	for (const n of ordered) incoming.set(n.id, []);
+	for (const e of edges) {
+		if (!byId.has(e.source) || !byId.has(e.target)) continue;
+		incoming.get(e.target)!.push(e.source);
+	}
+
+	for (const n of ordered) {
+		const deps = incoming.get(n.id) ?? [];
+		const max = deps.length === 0 ? -1 : Math.max(...deps.map((id) => depth.get(id) ?? 0));
+		depth.set(n.id, max + 1);
+	}
+
+	const maxDepth = Math.max(0, ...Array.from(depth.values()));
+	const groups: Node<T>[][] = [];
+	for (let d = 0; d <= maxDepth; d++) {
+		groups.push(ordered.filter((n) => depth.get(n.id) === d));
+	}
+	return groups.filter((g) => g.length > 0);
+}
+
 export function topologicalSort<T extends Record<string, unknown>>(
 	nodes: Node<T>[],
 	edges: Edge[]

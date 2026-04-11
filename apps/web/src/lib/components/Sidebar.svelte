@@ -13,7 +13,8 @@
 		{ type: 'test', label: 'Test', description: 'Run tests, report pass/fail' },
 		{ type: 'review', label: 'Review', description: "Review a prior node's output" },
 		{ type: 'confirm', label: 'Confirm', description: 'Second model verifies output' },
-		{ type: 'custom', label: 'Custom', description: 'Freeform prompt' }
+		{ type: 'custom', label: 'Custom', description: 'Freeform prompt' },
+		{ type: 'pause', label: 'Pause', description: 'Wait for human approval' }
 	];
 </script>
 

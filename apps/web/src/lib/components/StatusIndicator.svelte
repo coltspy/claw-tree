@@ -3,9 +3,10 @@
 
 	interface Props {
 		status: Status;
+		version?: string | null;
 	}
 
-	let { status }: Props = $props();
+	let { status, version = null }: Props = $props();
 
 	const dotClass = $derived(
 		{
@@ -15,16 +16,22 @@
 		}[status]
 	);
 
-	const label = $derived(
-		{
-			connected: 'Server online',
-			disconnected: 'Server offline',
-			checking: 'Checking…'
-		}[status]
+	const label = $derived.by(() => {
+		if (status === 'connected') return version ? `claw ${version}` : 'Server online';
+		if (status === 'disconnected') return 'Server offline';
+		return 'Checking…';
+	});
+
+	const title = $derived(
+		status === 'disconnected'
+			? 'claw binary not reachable — check CLAW_BIN or rebuild'
+			: status === 'connected'
+				? 'claw CLI responded to --version'
+				: 'Pinging claw CLI…'
 	);
 </script>
 
-<div class="flex items-center gap-2 text-xs text-zinc-400">
+<div class="flex items-center gap-2 text-xs text-zinc-400" {title}>
 	<span class="h-2 w-2 rounded-full {dotClass}"></span>
 	<span>{label}</span>
 </div>

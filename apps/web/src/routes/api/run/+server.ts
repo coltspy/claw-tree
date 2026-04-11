@@ -12,6 +12,9 @@ const CLAW_BIN = process.env.CLAW_BIN ?? DEFAULT_BIN;
 interface RunBody {
 	prompt: string;
 	model?: string;
+	permissionMode?: 'read-only' | 'workspace-write' | 'danger-full-access';
+	allowedTools?: string[];
+	outputFormat?: 'text' | 'json';
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -26,13 +29,19 @@ export const POST: RequestHandler = async ({ request }) => {
 		error(400, 'prompt must be a non-empty string');
 	}
 
-	const args = [
-		'--print',
-		'--model',
-		body.model ?? 'claude-sonnet-4-6',
-		'-p',
-		body.prompt
-	];
+	const args = ['--print', '--model', body.model ?? 'claude-sonnet-4-6'];
+
+	if (body.outputFormat === 'json') {
+		args.push('--output-format', 'json');
+	}
+	if (body.permissionMode) {
+		args.push('--permission-mode', body.permissionMode);
+	}
+	if (body.allowedTools && body.allowedTools.length > 0) {
+		args.push('--allowedTools', body.allowedTools.join(','));
+	}
+
+	args.push('-p', body.prompt);
 
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {

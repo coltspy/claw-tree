@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { SvelteFlow, Background, Controls, MiniMap } from '@xyflow/svelte';
+	import { SvelteFlow, Background, Controls, MiniMap, type NodeTypes } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { workflow } from '$lib/stores/workflow.svelte';
+	import WorkflowNodeCard from './nodes/WorkflowNodeCard.svelte';
+
+	const nodeTypes: NodeTypes = {
+		workflow: WorkflowNodeCard
+	};
 </script>
 
 <div class="h-full w-full">
@@ -17,12 +22,13 @@
 	<SvelteFlow
 		bind:nodes={workflow.nodes}
 		bind:edges={workflow.edges}
+		{nodeTypes}
 		colorMode="dark"
 		fitView
 		proOptions={{ hideAttribution: true }}
 	>
 		<Background />
 		<Controls />
-		<MiniMap />
+		<MiniMap pannable zoomable />
 	</SvelteFlow>
 </div>
