@@ -1,7 +1,46 @@
+# Rust
+target/
+
+# Python
 __pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / SvelteKit (for apps/web/ when added)
+node_modules/
+.svelte-kit/
+dist/
+build/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Claude Code local state
+/.claude
+/.claude.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project-specific (inherited from upstream claw-code)
 archive/
 .omx/
 .clawd-agents/
-# Claude Code local artifacts
-.claude/settings.local.json
-.claude/sessions/
+
+# Prowl planning notes (local only)
+/.test
