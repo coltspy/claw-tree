@@ -4,7 +4,9 @@ export type NodeType =
 	| 'review'
 	| 'confirm'
 	| 'custom'
-	| 'pause';
+	| 'pause'
+	| 'plan'
+	| 'summarize';
 
 export type OutputFormat = 'text' | 'json';
 

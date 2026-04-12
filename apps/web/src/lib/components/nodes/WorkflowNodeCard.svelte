@@ -36,6 +36,16 @@
 			accent: 'bg-amber-500/15 text-amber-300 border-amber-900/60',
 			label: 'PAUSE',
 			ring: 'shadow-amber-900/40'
+		},
+		plan: {
+			accent: 'bg-indigo-500/15 text-indigo-300 border-indigo-900/60',
+			label: 'PLAN',
+			ring: 'shadow-indigo-900/40'
+		},
+		summarize: {
+			accent: 'bg-teal-500/15 text-teal-300 border-teal-900/60',
+			label: 'SUMMARIZE',
+			ring: 'shadow-teal-900/40'
 		}
 	};
 

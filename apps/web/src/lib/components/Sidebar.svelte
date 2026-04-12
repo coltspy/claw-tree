@@ -12,12 +12,18 @@
 
 	const nodeOptions: NodeOption[] = [
 		{
+			type: 'plan',
+			label: 'Plan',
+			description: 'Think step by step first',
+			accent: 'bg-indigo-500/10 text-indigo-300 ring-indigo-900/40',
+			iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'
+		},
+		{
 			type: 'security',
 			label: 'Security',
 			description: 'Audit for vulnerabilities',
 			accent: 'bg-red-500/10 text-red-300 ring-red-900/40',
-			iconPath:
-				'M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z'
+			iconPath: 'M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z'
 		},
 		{
 			type: 'test',
@@ -40,6 +46,13 @@
 			description: 'Verify with a 2nd model',
 			accent: 'bg-emerald-500/10 text-emerald-300 ring-emerald-900/40',
 			iconPath: 'M9 12l2 2 4-4M20 12a8 8 0 11-16 0 8 8 0 0116 0z'
+		},
+		{
+			type: 'summarize',
+			label: 'Summarize',
+			description: 'Condense into a brief',
+			accent: 'bg-teal-500/10 text-teal-300 ring-teal-900/40',
+			iconPath: 'M4 6h16M4 10h10M4 14h6M4 18h2'
 		},
 		{
 			type: 'custom',

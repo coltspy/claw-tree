@@ -23,9 +23,11 @@ interface RunBody {
 	allowedTools?: string[];
 	outputFormat?: 'text' | 'json';
 	resumeSessionId?: string;
+	anthropicApiKey?: string;
+	openaiApiKey?: string;
 }
 
-export const META_MARKER = '<<<CLAW_TREE_META>>>';
+const META_MARKER = '<<<CLAW_TREE_META>>>';
 const SESSION_RE = /\[claw-tree-session\]\s+(\S+)/;
 const USAGE_RE =
 	/\[claw-tree-usage\]\s+cost_usd=\$?([\d.]+)\s+input_tokens=(\d+)\s+output_tokens=(\d+)/;
@@ -73,16 +75,22 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (body.allowedTools && body.allowedTools.length > 0) {
 		args.push('--allowedTools', body.allowedTools.join(','));
 	}
+
+	args.push('-p', body.prompt);
+
 	if (body.resumeSessionId) {
 		args.push('--resume', body.resumeSessionId);
 	}
 
-	args.push('-p', body.prompt);
+	const childEnv: NodeJS.ProcessEnv = { ...process.env };
+	if (body.anthropicApiKey) childEnv.ANTHROPIC_API_KEY = body.anthropicApiKey;
+	if (body.openaiApiKey) childEnv.OPENAI_API_KEY = body.openaiApiKey;
 
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
 			const child = spawn(CLAW_BIN, args, {
-				stdio: ['ignore', 'pipe', 'pipe']
+				stdio: ['ignore', 'pipe', 'pipe'],
+				env: childEnv
 			});
 
 			const encoder = new TextEncoder();

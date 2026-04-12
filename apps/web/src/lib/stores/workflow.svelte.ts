@@ -42,14 +42,133 @@ export const workflow = $state({
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 const NODE_DEFAULTS: Record<NodeType, { label: string; prompt: string }> = {
-	security: { label: 'Security Scan', prompt: 'Run a security audit on ' },
-	test: { label: 'Run Tests', prompt: 'Run the test suite and report pass/fail' },
-	review: { label: 'Review', prompt: 'Review the output: {{previous.output}}' },
-	confirm: { label: 'Confirm', prompt: 'Verify that {{previous.output}} is correct' },
+	security: {
+		label: 'Security Scan',
+		prompt: `You are a senior application security engineer. Audit the current working directory for security issues.
+
+Focus on:
+- Injection vulnerabilities (SQL, command, XSS, template)
+- Authentication and authorization flaws
+- Secrets, API keys, or credentials committed to source
+- Unsafe deserialization, eval, or file operations
+- Missing input validation at trust boundaries
+
+For each finding, report in this exact format:
+
+<finding>
+  <severity>critical | high | medium | low</severity>
+  <location>file:line</location>
+  <issue>one-line description</issue>
+  <fix>one-sentence suggested fix</fix>
+</finding>
+
+If you find no issues, say "No security issues found." on a single line.
+Do not flag stylistic concerns.`
+	},
+	test: {
+		label: 'Run Tests',
+		prompt: `Run the project's test suite and report the result.
+
+Use the appropriate command for the project (e.g. \`npm test\`, \`cargo test\`,
+\`pytest\`). If you're unsure which command to use, inspect package.json,
+Cargo.toml, or pyproject.toml first.
+
+Report the result in this exact format:
+
+<result>
+Command: <the command you ran>
+Total: <N>
+Passed: <N>
+Failed: <N>
+Skipped: <N>
+</result>
+
+If any tests failed, quote the failure output (test name, file, and error
+message) for each. If the suite can't be run at all, explain why in one
+sentence.`
+	},
+	review: {
+		label: 'Review',
+		prompt: `You are reviewing the output of a prior workflow step. Assess whether the
+step achieved its goal and whether anything looks wrong, incomplete, or
+suspicious.
+
+<prior_output>
+{{previous.output}}
+</prior_output>
+
+Reply in two sections:
+
+1. **Status**: exactly one of \`ok\`, \`warning\`, or \`error\` on its own line.
+2. **Notes**: up to 3 bullet points, each a single sentence, covering what
+   stood out and what the next step should consider.
+
+Be specific. Cite concrete details from the prior output. If everything
+looks clean, say so briefly.`
+	},
+	confirm: {
+		label: 'Confirm',
+		prompt: `You are an independent reviewer. Verify that the output below is correct
+and complete. Do not trust it blindly — cross-check claims, re-run the
+reasoning in your head, and look for subtle errors or omissions.
+
+<output_to_verify>
+{{previous.output}}
+</output_to_verify>
+
+Respond with:
+
+- **Verdict**: one of \`confirmed\`, \`needs_changes\`, or \`rejected\`
+- **Reasoning**: 1-3 sentences explaining the verdict
+- **Issues** (only if not confirmed): bullet list of specific problems`
+	},
 	custom: { label: 'Custom Step', prompt: '' },
 	pause: {
-		label: 'Pause',
-		prompt: 'Review the output of the previous node and decide whether to continue.'
+		label: 'Pause for approval',
+		prompt: `Review the output of the previous step before continuing.
+
+Check for:
+- Unexpected side effects (files modified, commands run)
+- Incorrect or suspicious results
+- Anything that needs human judgment before proceeding
+
+Approve to continue the workflow, or reject to halt it.`
+	},
+	plan: {
+		label: 'Plan',
+		prompt: `You are a senior engineer planning a task. Think step by step before
+doing any work.
+
+<task>
+{{previous.output}}
+</task>
+
+Produce a numbered plan. For each step include:
+- **What**: what specifically will be done
+- **Where**: which files, directories, or components it touches
+- **Why**: why the step is necessary
+- **Risk**: what could go wrong or break
+
+Keep the plan tight — 3 to 7 steps total. Do not execute anything yet.
+Output only the plan.`
+	},
+	summarize: {
+		label: 'Summarize',
+		prompt: `Summarize the content below into a brief suitable for a human skimming a
+dashboard.
+
+<content>
+{{previous.output}}
+</content>
+
+Format the response as:
+
+- **TL;DR**: one sentence capturing the whole thing
+- **Key points**: 3-5 bullets, each under 15 words
+- **Action items** (only if applicable): bullets starting with a verb
+
+Drop anything that isn't actionable or informative. Be ruthless about
+cutting filler.`
 	}
 };
 

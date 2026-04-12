@@ -6,6 +6,7 @@
 	import RunHistory from '$lib/components/RunHistory.svelte';
 	import OutputDrawer from '$lib/components/OutputDrawer.svelte';
 	import ApprovalPanel from '$lib/components/ApprovalPanel.svelte';
+	import ChatPanel from '$lib/components/ChatPanel.svelte';
 	import {
 		workflow,
 		setHistoryHooks,
@@ -19,6 +20,7 @@
 		redo
 	} from '$lib/stores/history.svelte';
 	import { runWorkflow, cancelWorkflow, execution } from '$lib/stores/execution.svelte';
+	import { ui, setChatOpen } from '$lib/stores/ui.svelte';
 
 	setHistoryHooks(recordHistory, recordHistoryDebounced);
 
@@ -109,6 +111,7 @@
 			</div>
 			<OutputDrawer />
 		</main>
+		<ChatPanel open={ui.chatOpen} onClose={() => setChatOpen(false)} />
 		<NodePanel />
 	</div>
 	<ApprovalPanel />

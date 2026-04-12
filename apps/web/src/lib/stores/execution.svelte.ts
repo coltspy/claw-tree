@@ -2,9 +2,11 @@ import { workflow, updateNodeData, type NodeData, type EdgeData } from './workfl
 import {
 	createRun,
 	finalizeRun,
+	getRun,
 	updateNodeResult,
 	type Run
 } from './runs.svelte';
+import { settings } from './settings.svelte';
 import { topologicalSort, groupByDepth } from '$lib/engine/toposort';
 import { validateWorkflow, type ValidationError } from '$lib/engine/validate';
 import { interpolatePrompt } from '$lib/engine/interpolate';
@@ -59,6 +61,7 @@ export async function runWorkflow() {
 	}
 
 	const run = createRun(workflow.nodes, workflow.edges);
+	const runId = run.id;
 	let haltRequested = false;
 
 	try {
@@ -71,12 +74,12 @@ export async function runWorkflow() {
 
 			const toRun: Node<NodeData>[] = [];
 			for (const node of group) {
-				if (isNodeEnabled(node, workflow.edges, run, skipped)) {
+				if (isNodeEnabled(node, workflow.edges, runId, skipped)) {
 					toRun.push(node);
 				} else {
 					skipped.add(node.id);
 					updateNodeData(node.id, { status: 'skipped' });
-					updateNodeResult(run.id, node.id, {
+					updateNodeResult(runId, node.id, {
 						status: 'skipped',
 						endedAt: Date.now()
 					});
@@ -84,7 +87,7 @@ export async function runWorkflow() {
 			}
 
 			const outcomes = await Promise.all(
-				toRun.map((node) => executeNode(node, order, run.id))
+				toRun.map((node) => executeNode(node, order, runId))
 			);
 
 			for (let i = 0; i < outcomes.length; i++) {
@@ -101,7 +104,7 @@ export async function runWorkflow() {
 					}
 					for (const rid of remainingIds) {
 						updateNodeData(rid, { status: 'cancelled' });
-						updateNodeResult(run.id, rid, {
+						updateNodeResult(runId, rid, {
 							status: 'cancelled',
 							endedAt: Date.now()
 						});
@@ -117,13 +120,16 @@ export async function runWorkflow() {
 		execution.activeNodeIds = new Set();
 		execution.pendingApproval = null;
 
-		const anyError = Object.values(run.results).some((r) => r.status === 'error');
+		const finalRun = getRun(runId);
+		const anyError = finalRun
+			? Object.values(finalRun.results).some((r) => r.status === 'error')
+			: false;
 		const finalStatus: Run['status'] = cancelled
 			? 'cancelled'
 			: anyError
 				? 'error'
 				: 'done';
-		finalizeRun(run.id, finalStatus);
+		finalizeRun(runId, finalStatus);
 		abortController = null;
 	}
 }
@@ -131,9 +137,12 @@ export async function runWorkflow() {
 function isNodeEnabled(
 	node: Node<NodeData>,
 	edges: Edge[],
-	run: Run,
+	runId: string,
 	skipped: Set<string>
 ): boolean {
+	const run = getRun(runId);
+	if (!run) return false;
+
 	const incoming = edges.filter((e) => e.target === node.id);
 	if (incoming.length === 0) return true;
 
@@ -198,6 +207,10 @@ async function executeNode(
 		fullOrder
 	);
 
+	const promptWithContext = fresh.data.path
+		? `<target_path>${fresh.data.path}</target_path>\n\n${resolvedPrompt}`
+		: resolvedPrompt;
+
 	const resumeSessionId = fresh.data.resumeFromPrevious
 		? findUpstreamSessionId(fresh.id)
 		: undefined;
@@ -223,7 +236,7 @@ async function executeNode(
 			const result = await streamNode(
 				node.id,
 				runId,
-				resolvedPrompt,
+				promptWithContext,
 				fresh.data,
 				resumeSessionId,
 				abortController!.signal
@@ -446,7 +459,9 @@ async function streamNode(
 			permissionMode: nodeData.permissionMode,
 			allowedTools: nodeData.allowedTools,
 			outputFormat: nodeData.outputFormat,
-			resumeSessionId
+			resumeSessionId,
+			anthropicApiKey: settings.anthropicApiKey || undefined,
+			openaiApiKey: settings.openaiApiKey || undefined
 		}),
 		signal
 	});
