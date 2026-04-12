@@ -1,5 +1,0 @@
-{"created_at_ms":1775959075882,"model":"claude-sonnet-4-6","session_id":"session-1775959075882-0","type":"session_meta","updated_at_ms":1775959079600,"version":1}
-{"message":{"blocks":[{"text":"make me a six digit number dont use outside tools.","type":"text"}],"role":"user"},"type":"message"}
-{"message":{"blocks":[{"text":"**482 619**","type":"text"}],"role":"assistant","usage":{"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"input_tokens":19243,"output_tokens":8}},"type":"message"}
-{"message":{"blocks":[{"text":"whats my six digit number I forgot.","type":"text"}],"role":"user"},"type":"message"}
-{"message":{"blocks":[{"text":"Your six digit number was **482619**.","type":"text"}],"role":"assistant","usage":{"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"input_tokens":19295,"output_tokens":12}},"type":"message"}
