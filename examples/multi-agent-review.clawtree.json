@@ -1,0 +1,125 @@
+{
+  "nodes": [
+    {
+      "id": "read-diff",
+      "type": "workflow",
+      "position": { "x": 200, "y": 100 },
+      "data": {
+        "label": "Read diff",
+        "nodeType": "custom",
+        "prompt": "You are a code reviewer preparing context for specialized agents.\n\nRead the current git diff (staged and unstaged) or uncommitted changes in the working directory. If no diff exists, read the most recent commit's changes instead.\n\nOutput a structured summary:\n\n<diff_summary>\n  <files_changed>list each file with a one-line description of what changed</files_changed>\n  <lines_added>total count</lines_added>\n  <lines_removed>total count</lines_removed>\n  <key_changes>3-5 bullets describing the most significant functional changes</key_changes>\n</diff_summary>\n\nDo not editorialize. Stick to facts about what changed.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-agent",
+      "type": "workflow",
+      "position": { "x": 80, "y": 320 },
+      "data": {
+        "label": "Security Agent",
+        "nodeType": "custom",
+        "prompt": "You are a senior application security engineer reviewing a code diff.\n\nYou have already read the diff in the previous step. Now perform a focused security review.\n\nAnalyze every changed line for:\n- Injection vulnerabilities (SQL, command, XSS, template injection)\n- Authentication and authorization regressions\n- Secrets, API keys, or credentials added to source\n- Unsafe deserialization, eval, or dynamic code execution\n- Missing input validation at trust boundaries\n- Path traversal or file access issues\n\nFor each finding, report:\n\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line</location>\n  <issue>one-line description</issue>\n  <fix>one-sentence remediation</fix>\n</finding>\n\nIf no issues found, output \"No security issues found.\" on a single line.\nEnd with a one-line security verdict: PASS, WARN, or FAIL.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "quality-agent",
+      "type": "workflow",
+      "position": { "x": 420, "y": 320 },
+      "data": {
+        "label": "Quality Agent",
+        "nodeType": "custom",
+        "prompt": "You are a senior software engineer focused on code quality and maintainability.\n\nYou have already read the diff in the previous step. Now perform a focused quality review.\n\nAnalyze every changed line for:\n- Readability and naming clarity\n- DRY violations and unnecessary duplication\n- Error handling gaps (missing catches, swallowed errors, unhelpful messages)\n- Dead code, unused imports, or leftover debugging artifacts\n- Overly complex logic that could be simplified\n- Missing or inadequate type safety\n\nFor each issue, report:\n\n<comment>\n  <severity>blocker | major | minor | nit</severity>\n  <location>file:line</location>\n  <issue>one-line description</issue>\n  <suggestion>concrete fix or alternative</suggestion>\n</comment>\n\nIf the code is clean, output \"No quality issues found.\" on a single line.\nEnd with a one-line quality verdict: CLEAN, NEEDS_WORK, or POOR.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "merge-findings",
+      "type": "workflow",
+      "position": { "x": 200, "y": 540 },
+      "data": {
+        "label": "Merge findings",
+        "nodeType": "summarize",
+        "prompt": "You are a tech lead merging two independent code review reports into a single unified verdict.\n\n<security_findings>\n{{Security Agent.output}}\n</security_findings>\n\n<quality_findings>\n{{Quality Agent.output}}\n</quality_findings>\n\nProduce a merged review in this format:\n\n- **Overall verdict**: one of `approve`, `request-changes`, or `reject`\n- **Security**: one-line summary + verdict from the security agent\n- **Quality**: one-line summary + verdict from the quality agent\n- **Blockers**: bullet list of anything severity critical/blocker (omit if none)\n- **Recommendations**: up to 5 bullets, ordered by importance\n\nBe concise. A busy engineer should be able to read this in 30 seconds.",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "confirm-review",
+      "type": "workflow",
+      "position": { "x": 200, "y": 760 },
+      "data": {
+        "label": "Confirm review",
+        "nodeType": "confirm",
+        "prompt": "Verify the merged review summary below is consistent and actionable.\n\n<output_to_verify>\n{{previous.output}}\n</output_to_verify>\n\nCheck that:\n- The overall verdict matches the severity of findings listed\n- No contradictions between the security and quality sections\n- Blockers are genuinely blocking, not minor issues inflated\n\nRespond with:\n- **Verdict**: one of `confirmed`, `needs_changes`, or `rejected`\n- **Reasoning**: 1-3 sentences",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-signoff",
+      "type": "workflow",
+      "position": { "x": 200, "y": 980 },
+      "data": {
+        "label": "Human sign-off",
+        "nodeType": "pause",
+        "prompt": "The parallel code review is complete. Read the merged findings above.\n\nApprove to finalize the review, or reject to re-run with different parameters.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "read-diff->security-agent",
+      "source": "read-diff",
+      "target": "security-agent",
+      "type": "smoothstep"
+    },
+    {
+      "id": "read-diff->quality-agent",
+      "source": "read-diff",
+      "target": "quality-agent",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-agent->merge-findings",
+      "source": "security-agent",
+      "target": "merge-findings",
+      "type": "smoothstep"
+    },
+    {
+      "id": "quality-agent->merge-findings",
+      "source": "quality-agent",
+      "target": "merge-findings",
+      "type": "smoothstep"
+    },
+    {
+      "id": "merge-findings->confirm-review",
+      "source": "merge-findings",
+      "target": "confirm-review",
+      "type": "smoothstep"
+    },
+    {
+      "id": "confirm-review->pause-signoff",
+      "source": "confirm-review",
+      "target": "pause-signoff",
+      "type": "smoothstep"
+    }
+  ]
+}

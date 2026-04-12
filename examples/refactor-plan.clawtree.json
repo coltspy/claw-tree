@@ -1,0 +1,81 @@
+{
+  "nodes": [
+    {
+      "id": "shape-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Read repo shape",
+        "nodeType": "custom",
+        "prompt": "You are mapping out a repository before a refactor. Do not read every file — sample enough to understand the layout.\n\n<task>\nInspect the current working directory and produce a high-level shape of the codebase.\n</task>\n\nReport in this exact format:\n\n<shape>\n  <stack>languages, frameworks, build tools</stack>\n  <entry_points>main binaries, server entry files, CLI commands</entry_points>\n  <modules>top-level folders with a one-line role for each</modules>\n  <hotspots>files or folders that look central, large, or tangled</hotspots>\n</shape>\n\nKeep each section to 5 items max. No file contents — just the map.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "plan-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 420 },
+      "data": {
+        "label": "Draft refactor plan",
+        "nodeType": "plan",
+        "prompt": "You are a senior engineer planning a safe, incremental refactor. Use the repo shape below as ground truth.\n\n<repo_shape>\n{{previous.output}}\n</repo_shape>\n\nPropose a refactor plan that improves clarity, reduces coupling, or removes obvious tech debt — without changing observable behavior. Think step by step about ordering: cheap and reversible changes first, risky structural ones last.\n\nProduce a numbered plan. For each step include:\n- **What**: the change in one sentence\n- **Where**: files or modules touched\n- **Why**: the concrete benefit\n- **Risk**: what could break and how to detect it\n- **Reversible**: `yes` or `no`\n\nKeep it to 4-8 steps. End with a one-line **Rollback strategy**.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "review-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 640 },
+      "data": {
+        "label": "Second-pass the plan",
+        "nodeType": "review",
+        "prompt": "You are a skeptical reviewer reading another engineer's refactor plan. Look for gaps, hidden assumptions, and missing safety nets.\n\n<plan>\n{{previous.output}}\n</plan>\n\nFor each issue you find, emit:\n\n<concern>\n  <severity>blocker | major | minor</severity>\n  <step>step number from the plan</step>\n  <issue>what's missing or wrong</issue>\n  <suggestion>concrete change to the plan</suggestion>\n</concern>\n\nThen end with:\n\n- **Verdict**: exactly one of `ready`, `revise`, or `rethink`\n- **One-line rationale**\n\nIf the plan is solid, emit zero concerns and verdict `ready`.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 860 },
+      "data": {
+        "label": "Approve before acting",
+        "nodeType": "pause",
+        "prompt": "Read the refactor plan and the reviewer's concerns above. Approve to greenlight execution, or reject to send it back for revision. Nothing destructive runs until you approve.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "shape-1->plan-1",
+      "source": "shape-1",
+      "target": "plan-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "plan-1->review-1",
+      "source": "plan-1",
+      "target": "review-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "review-1->pause-1",
+      "source": "review-1",
+      "target": "pause-1",
+      "type": "smoothstep"
+    }
+  ]
+}

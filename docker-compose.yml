@@ -1,0 +1,24 @@
+services:
+  claw-tree:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claw-tree:latest
+    container_name: claw-tree
+    ports:
+      - "5173:5173"
+    environment:
+      # API keys can be set here as a fallback. The settings page in the UI
+      # overrides these at runtime on a per-request basis.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CLAW_BIN=/usr/local/bin/claw
+    volumes:
+      # Mount a host directory that claw can read/write. Everything under this
+      # path becomes accessible to the agent. Change ./workspace to whatever
+      # project you want claw-tree to operate on.
+      - ./workspace:/app/workspace:rw
+    working_dir: /app/apps/web
+    stdin_open: true
+    tty: true
+    restart: unless-stopped

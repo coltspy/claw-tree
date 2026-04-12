@@ -1,0 +1,153 @@
+{
+  "nodes": [
+    {
+      "id": "research-question",
+      "type": "workflow",
+      "position": { "x": 250, "y": 100 },
+      "data": {
+        "label": "Research question",
+        "nodeType": "custom",
+        "prompt": "You are a researcher tasked with gathering facts on a topic.\n\nInvestigate the question or topic described in the working directory's context (README, docs, or recent changes). If no specific question is evident, investigate the architecture and design decisions of the current project.\n\nFocus on gathering facts, not opinions. Output a structured brief:\n\n<research_brief>\n  <topic>the question or area being researched</topic>\n  <key_facts>5-10 bullets of concrete, verifiable data points</key_facts>\n  <constraints>known limitations, dependencies, or hard requirements</constraints>\n  <open_questions>2-4 questions that remain unanswered</open_questions>\n</research_brief>\n\nBe thorough but concise. Every bullet should contain a specific fact, not a vague observation.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "technical-perspective",
+      "type": "workflow",
+      "position": { "x": 30, "y": 340 },
+      "data": {
+        "label": "Technical Perspective",
+        "nodeType": "custom",
+        "prompt": "You are a senior software engineer analyzing a research brief from a technical feasibility standpoint.\n\nThe research brief was gathered in the previous step. Analyze it through an engineering lens:\n\n- **Feasibility**: can this be built with current technology and team capacity?\n- **Architecture risks**: what could break at scale, what are the coupling concerns?\n- **Technical debt**: what shortcuts would be taken, what is the long-term cost?\n- **Dependencies**: what external systems, libraries, or services does this rely on?\n- **Timeline estimate**: rough effort in engineer-weeks\n\nOutput your analysis as:\n\n<technical_analysis>\n  <verdict>feasible | risky | infeasible</verdict>\n  <strengths>2-3 bullets on what works well technically</strengths>\n  <risks>2-3 bullets on technical risks, each with a mitigation</risks>\n  <estimate>rough timeline with key milestones</estimate>\n</technical_analysis>",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "business-perspective",
+      "type": "workflow",
+      "position": { "x": 250, "y": 340 },
+      "data": {
+        "label": "Business Perspective",
+        "nodeType": "custom",
+        "prompt": "You are a business analyst evaluating a research brief from a market and ROI standpoint.\n\nThe research brief was gathered in the previous step. Analyze it through a business lens:\n\n- **Market fit**: does this solve a real problem for a defined audience?\n- **Cost/benefit**: what are the costs (engineering, infra, ops) vs expected returns?\n- **Competitive landscape**: who else solves this, what is the differentiation?\n- **Risks**: market timing, adoption barriers, regulatory concerns\n- **Go/no-go recommendation**: should this be pursued?\n\nOutput your analysis as:\n\n<business_analysis>\n  <verdict>strong_opportunity | worth_exploring | pass</verdict>\n  <opportunity>2-3 bullets on business upside</opportunity>\n  <risks>2-3 bullets on business risks</risks>\n  <recommendation>one paragraph with a clear go/no-go and conditions</recommendation>\n</business_analysis>",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "user-perspective",
+      "type": "workflow",
+      "position": { "x": 470, "y": 340 },
+      "data": {
+        "label": "User Perspective",
+        "nodeType": "custom",
+        "prompt": "You are a UX designer evaluating a research brief from a user experience standpoint.\n\nThe research brief was gathered in the previous step. Analyze it through a UX lens:\n\n- **User needs**: what pain points does this address, who are the primary users?\n- **Usability**: how intuitive is the proposed solution, what is the learning curve?\n- **Accessibility**: are there accessibility concerns or inclusive design considerations?\n- **User journey**: what does the happy path look like, where are the friction points?\n- **Delight factors**: what could make this experience exceptional?\n\nOutput your analysis as:\n\n<ux_analysis>\n  <verdict>excellent_ux | acceptable_ux | poor_ux</verdict>\n  <user_needs>2-3 bullets on validated user problems</user_needs>\n  <friction_points>2-3 bullets on UX risks or pain points</friction_points>\n  <recommendations>2-3 concrete UX improvements</recommendations>\n</ux_analysis>",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "synthesize",
+      "type": "workflow",
+      "position": { "x": 250, "y": 580 },
+      "data": {
+        "label": "Synthesize",
+        "nodeType": "custom",
+        "prompt": "You are a product strategist synthesizing three independent analyses into a unified recommendation.\n\n<technical>\n{{Technical Perspective.output}}\n</technical>\n\n<business>\n{{Business Perspective.output}}\n</business>\n\n<user_experience>\n{{User Perspective.output}}\n</user_experience>\n\nProduce a unified recommendation:\n\n- **Decision**: one of `proceed`, `proceed_with_conditions`, `pivot`, or `kill`\n- **Summary**: 2-3 sentences capturing the consensus across all three perspectives\n- **Alignment**: where do the three perspectives agree?\n- **Tensions**: where do they conflict, and how should the conflict be resolved?\n- **Conditions**: if proceeding, what must be true (ordered list of non-negotiables)\n- **Next steps**: 3-5 concrete actions, each starting with a verb\n\nBe direct. Executives will read this in under 60 seconds.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "confirm-synthesis",
+      "type": "workflow",
+      "position": { "x": 250, "y": 800 },
+      "data": {
+        "label": "Confirm synthesis",
+        "nodeType": "confirm",
+        "prompt": "Verify the synthesized recommendation below is balanced and actionable.\n\n<output_to_verify>\n{{previous.output}}\n</output_to_verify>\n\nCheck that:\n- All three perspectives (technical, business, UX) are fairly represented\n- The decision logically follows from the evidence presented\n- No perspective was ignored or unfairly dismissed\n- Next steps are specific enough to act on\n\nRespond with:\n- **Verdict**: one of `confirmed`, `needs_changes`, or `rejected`\n- **Reasoning**: 1-3 sentences",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-decision",
+      "type": "workflow",
+      "position": { "x": 250, "y": 1020 },
+      "data": {
+        "label": "Human sign-off",
+        "nodeType": "pause",
+        "prompt": "The multi-perspective research synthesis is complete. Review the recommendation above.\n\nApprove to finalize the decision, or reject to re-run with adjusted research parameters.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "research-question->technical-perspective",
+      "source": "research-question",
+      "target": "technical-perspective",
+      "type": "smoothstep"
+    },
+    {
+      "id": "research-question->business-perspective",
+      "source": "research-question",
+      "target": "business-perspective",
+      "type": "smoothstep"
+    },
+    {
+      "id": "research-question->user-perspective",
+      "source": "research-question",
+      "target": "user-perspective",
+      "type": "smoothstep"
+    },
+    {
+      "id": "technical-perspective->synthesize",
+      "source": "technical-perspective",
+      "target": "synthesize",
+      "type": "smoothstep"
+    },
+    {
+      "id": "business-perspective->synthesize",
+      "source": "business-perspective",
+      "target": "synthesize",
+      "type": "smoothstep"
+    },
+    {
+      "id": "user-perspective->synthesize",
+      "source": "user-perspective",
+      "target": "synthesize",
+      "type": "smoothstep"
+    },
+    {
+      "id": "synthesize->confirm-synthesis",
+      "source": "synthesize",
+      "target": "confirm-synthesis",
+      "type": "smoothstep"
+    },
+    {
+      "id": "confirm-synthesis->pause-decision",
+      "source": "confirm-synthesis",
+      "target": "pause-decision",
+      "type": "smoothstep"
+    }
+  ]
+}

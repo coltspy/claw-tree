@@ -1,0 +1,182 @@
+{
+  "nodes": [
+    {
+      "id": "audit-plan",
+      "type": "workflow",
+      "position": { "x": 250, "y": 100 },
+      "data": {
+        "label": "Audit plan",
+        "nodeType": "plan",
+        "prompt": "You are a senior engineer planning a comprehensive audit across three dimensions: security, testing, and performance.\n\n<task>\nPlan an audit of the current working directory. The audit will be executed by three independent agents in parallel, so your plan must clearly partition the work.\n</task>\n\nProduce a plan with three sections:\n\n1. **Security scan**: which files, endpoints, and patterns to check for vulnerabilities\n2. **Test coverage**: which test suites to run, what gaps to look for, what assertions matter\n3. **Performance review**: what to check for bundle size, memory leaks, N+1 queries, algorithmic complexity\n\nFor each section, list 2-4 concrete steps. Do not execute anything yet.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-scan",
+      "type": "workflow",
+      "position": { "x": 50, "y": 320 },
+      "data": {
+        "label": "Security Scan",
+        "nodeType": "security",
+        "prompt": "You are a senior application security engineer. Follow the security section of the audit plan from the previous step.\n\nScan the codebase for:\n- Injection vulnerabilities (SQL, command, XSS, template)\n- Authentication and authorization flaws\n- Secrets or credentials committed to source\n- Unsafe deserialization, eval, or file operations\n- Missing input validation at trust boundaries\n\nFor each finding, report:\n\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line</location>\n  <issue>one-line description</issue>\n  <fix>one-sentence remediation</fix>\n</finding>\n\nIf no issues found, output \"No security issues found.\" on a single line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "test-runner",
+      "type": "workflow",
+      "position": { "x": 250, "y": 320 },
+      "data": {
+        "label": "Test Runner",
+        "nodeType": "test",
+        "prompt": "Run the project's test suite following the testing section of the audit plan.\n\nUse the appropriate command for the project (e.g. `npm test`, `cargo test`, `pytest`). If unsure, inspect package.json, Cargo.toml, or pyproject.toml first.\n\nReport the result:\n\n<result>\n  <command>the command you ran</command>\n  <total>N</total>\n  <passed>N</passed>\n  <failed>N</failed>\n  <skipped>N</skipped>\n</result>\n\nIf any tests failed, quote the failure output for each.\nIf the suite cannot run, explain why in one sentence.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "performance-check",
+      "type": "workflow",
+      "position": { "x": 450, "y": 320 },
+      "data": {
+        "label": "Performance",
+        "nodeType": "custom",
+        "prompt": "You are a performance engineer. Follow the performance section of the audit plan.\n\nAnalyze the codebase for:\n- Bundle size concerns (large dependencies, tree-shaking issues)\n- Memory leaks (unclosed handles, growing caches, missing cleanup)\n- N+1 query patterns in database or API calls\n- Algorithmic complexity issues (nested loops over large collections)\n- Missing pagination or unbounded list operations\n\nFor each concern, report:\n\n<perf_issue>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line or module</location>\n  <issue>one-line description</issue>\n  <impact>estimated impact on latency, memory, or throughput</impact>\n</perf_issue>\n\nIf no issues found, output \"No performance concerns found.\" on a single line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "triage",
+      "type": "workflow",
+      "position": { "x": 250, "y": 540 },
+      "data": {
+        "label": "Triage",
+        "nodeType": "summarize",
+        "prompt": "You are a tech lead triaging results from three parallel audit agents.\n\n<security_results>\n{{Security Scan.output}}\n</security_results>\n\n<test_results>\n{{Test Runner.output}}\n</test_results>\n\n<performance_results>\n{{Performance.output}}\n</performance_results>\n\nProduce a triage brief:\n\n- **Overall status**: one of `clean`, `needs_attention`, or `critical`\n- **Security**: one-line summary\n- **Tests**: one-line summary (pass rate, any failures)\n- **Performance**: one-line summary\n- **Action items**: numbered list of fixes ordered by severity, each starting with a verb\n\nIf any finding is severity critical or high, the overall status MUST be `critical` or `needs_attention`.",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "fix-list",
+      "type": "workflow",
+      "position": { "x": 80, "y": 760 },
+      "data": {
+        "label": "Fix list",
+        "nodeType": "custom",
+        "prompt": "The audit triage flagged critical or high severity issues that need fixing.\n\n<triage_output>\n{{previous.output}}\n</triage_output>\n\nProduce a concrete fix list:\n\n1. For each critical/high issue, provide:\n   - **File**: exact file path\n   - **Problem**: one sentence\n   - **Fix**: step-by-step instructions a developer can follow\n   - **Estimated effort**: small (< 1hr), medium (1-4hr), or large (4hr+)\n\n2. Order by severity (critical first), then by estimated effort (small first).\n\nDo not include medium/low issues. Focus only on what must be fixed before shipping.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "all-clear",
+      "type": "workflow",
+      "position": { "x": 420, "y": 760 },
+      "data": {
+        "label": "All clear",
+        "nodeType": "confirm",
+        "prompt": "The audit triage found no critical or high severity issues.\n\n<triage_output>\n{{previous.output}}\n</triage_output>\n\nVerify this assessment is correct:\n- Confirm no critical/high findings were missed or downgraded\n- Check that test pass rate is acceptable\n- Confirm no security issues were glossed over\n\nRespond with:\n- **Verdict**: one of `confirmed`, `needs_changes`, or `rejected`\n- **Reasoning**: 1-3 sentences",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-final",
+      "type": "workflow",
+      "position": { "x": 250, "y": 980 },
+      "data": {
+        "label": "Human sign-off",
+        "nodeType": "pause",
+        "prompt": "The full audit pipeline is complete. Review the findings above.\n\nApprove to finalize, or reject to re-run the audit with adjusted parameters.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "audit-plan->security-scan",
+      "source": "audit-plan",
+      "target": "security-scan",
+      "type": "smoothstep"
+    },
+    {
+      "id": "audit-plan->test-runner",
+      "source": "audit-plan",
+      "target": "test-runner",
+      "type": "smoothstep"
+    },
+    {
+      "id": "audit-plan->performance-check",
+      "source": "audit-plan",
+      "target": "performance-check",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-scan->triage",
+      "source": "security-scan",
+      "target": "triage",
+      "type": "smoothstep"
+    },
+    {
+      "id": "test-runner->triage",
+      "source": "test-runner",
+      "target": "triage",
+      "type": "smoothstep"
+    },
+    {
+      "id": "performance-check->triage",
+      "source": "performance-check",
+      "target": "triage",
+      "type": "smoothstep"
+    },
+    {
+      "id": "triage->fix-list",
+      "source": "triage",
+      "target": "fix-list",
+      "type": "smoothstep",
+      "label": "issues found",
+      "data": { "condition": "output.toLowerCase().includes('critical') || output.toLowerCase().includes('high')" }
+    },
+    {
+      "id": "triage->all-clear",
+      "source": "triage",
+      "target": "all-clear",
+      "type": "smoothstep",
+      "label": "clean",
+      "data": { "condition": "!output.toLowerCase().includes('critical') && !output.toLowerCase().includes('high')" }
+    },
+    {
+      "id": "fix-list->pause-final",
+      "source": "fix-list",
+      "target": "pause-final",
+      "type": "smoothstep"
+    },
+    {
+      "id": "all-clear->pause-final",
+      "source": "all-clear",
+      "target": "pause-final",
+      "type": "smoothstep"
+    }
+  ]
+}

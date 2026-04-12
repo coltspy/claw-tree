@@ -3,7 +3,7 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import WorkflowCanvas from '$lib/components/WorkflowCanvas.svelte';
 	import NodePanel from '$lib/components/NodePanel.svelte';
-	import RunHistory from '$lib/components/RunHistory.svelte';
+	import WorkflowLibrary from '$lib/components/WorkflowLibrary.svelte';
 	import OutputDrawer from '$lib/components/OutputDrawer.svelte';
 	import ApprovalPanel from '$lib/components/ApprovalPanel.svelte';
 	import ChatPanel from '$lib/components/ChatPanel.svelte';
@@ -103,7 +103,7 @@
 <div class="flex h-screen flex-col bg-zinc-950 text-zinc-100">
 	<Toolbar />
 	<div class="flex flex-1 overflow-hidden">
-		<RunHistory />
+		<WorkflowLibrary />
 		<Sidebar />
 		<main class="relative flex flex-1 flex-col overflow-hidden">
 			<div class="relative flex-1 overflow-hidden">

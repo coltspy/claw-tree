@@ -31,3 +31,4 @@ archive/
 .omx/
 .clawd-agents/
 /.test
+.claw/

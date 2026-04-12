@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { settings, saveSettings } from '$lib/stores/settings.svelte';
+	import { cacheSize, clearCache } from '$lib/stores/cache.svelte';
 
 	interface Props {
 		open: boolean;
@@ -175,6 +176,24 @@
 					Keys never leave your machine. They are sent from your browser to the local
 					SvelteKit server and passed as environment variables to the claw subprocess.
 				</p>
+
+				<div>
+					<div class="mb-1.5 flex items-center justify-between">
+						<span class="text-[11px] font-medium text-zinc-400">Node output cache</span>
+						<span class="font-mono text-[10px] text-zinc-500">{cacheSize()} entries</span>
+					</div>
+					<button
+						type="button"
+						onclick={clearCache}
+						class="w-full rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-red-900 hover:text-red-300"
+					>
+						Clear cache
+					</button>
+					<p class="mt-1 text-[10px] text-zinc-600">
+						Nodes skip re-running when their inputs match a prior successful run. Cached results
+						show a cyan badge on the node card.
+					</p>
+				</div>
 			</div>
 
 			<div class="flex items-center justify-end gap-2 border-t border-zinc-800 px-5 py-3">

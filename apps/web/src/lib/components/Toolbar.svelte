@@ -5,6 +5,12 @@
 	import { execution, runWorkflow, cancelWorkflow } from '$lib/stores/execution.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import { ui, toggleChat } from '$lib/stores/ui.svelte';
+	import { bypassCacheForNextRun } from '$lib/stores/cache.svelte';
+
+	function runIgnoringCache() {
+		bypassCacheForNextRun();
+		void runWorkflow();
+	}
 
 	let serverStatus = $state<'connected' | 'disconnected' | 'checking'>('checking');
 	let serverVersion = $state<string | null>(null);
@@ -158,14 +164,28 @@
 					Cancel
 				</button>
 			{:else}
-				<button
-					type="button"
-					onclick={runWorkflow}
-					disabled={!canRun}
-					class="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-				>
-					Run
-				</button>
+				<div class="flex items-center">
+					<button
+						type="button"
+						onclick={runWorkflow}
+						disabled={!canRun}
+						class="rounded-l bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+					>
+						Run
+					</button>
+					<button
+						type="button"
+						onclick={runIgnoringCache}
+						disabled={!canRun}
+						title="Run, ignoring cache (force re-run every node)"
+						aria-label="Run ignoring cache"
+						class="rounded-r border-l border-emerald-700 bg-emerald-600 px-1.5 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+					>
+						<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 3v3H10.5" />
+						</svg>
+					</button>
+				</div>
 			{/if}
 		</div>
 	</div>

@@ -96,6 +96,26 @@ export const POST: RequestHandler = async ({ request }) => {
 			const encoder = new TextEncoder();
 			let stdoutBuffer = '';
 			let stderrBuffer = '';
+			let closed = false;
+
+			const safeEnqueue = (data: Uint8Array) => {
+				if (closed) return;
+				try {
+					controller.enqueue(data);
+				} catch {
+					closed = true;
+				}
+			};
+
+			const safeClose = () => {
+				if (closed) return;
+				closed = true;
+				try {
+					controller.close();
+				} catch {
+					// controller may already be closed by an upstream abort
+				}
+			};
 
 			const processStdout = (text: string): string => {
 				stdoutBuffer += text;
@@ -107,9 +127,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			};
 
 			child.stdout.on('data', (chunk: Buffer) => {
+				if (closed) return;
 				const clean = processStdout(chunk.toString('utf8'));
 				if (clean.length > 0) {
-					controller.enqueue(encoder.encode(clean));
+					safeEnqueue(encoder.encode(clean));
 				}
 			});
 
@@ -118,10 +139,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 
 			child.on('error', (err) => {
-				controller.enqueue(
+				safeEnqueue(
 					encoder.encode(`\n[spawn error] ${err.message}\nTried: ${CLAW_BIN}\n`)
 				);
-				controller.close();
+				safeClose();
 			});
 
 			child.on('close', (code) => {
@@ -129,28 +150,30 @@ export const POST: RequestHandler = async ({ request }) => {
 					const flushed = stripAnsi(
 						stdoutBuffer.replace(/\u001b7[\s\S]*?\u001b8/g, '')
 					);
-					if (flushed.length > 0) controller.enqueue(encoder.encode(flushed));
+					if (flushed.length > 0) safeEnqueue(encoder.encode(flushed));
 					stdoutBuffer = '';
 				}
 				const meta = parseMetaFromStderr(stderrBuffer);
-				controller.enqueue(
-					encoder.encode(`\n${META_MARKER}${JSON.stringify(meta)}\n`)
-				);
+				safeEnqueue(encoder.encode(`\n${META_MARKER}${JSON.stringify(meta)}\n`));
 				if (code !== 0 && code !== null) {
 					const info = stderrBuffer
 						.replace(SESSION_RE, '')
 						.replace(USAGE_RE, '')
 						.trim();
-					controller.enqueue(
+					safeEnqueue(
 						encoder.encode(`\n[exit ${code}]${info ? `: ${info}` : ''}`)
 					);
 				}
-				controller.close();
+				safeClose();
 			});
 
 			request.signal.addEventListener('abort', () => {
+				closed = true;
 				child.kill();
 			});
+		},
+		cancel() {
+			// consumer cancelled — the abort listener above handles child cleanup
 		}
 	});
 

@@ -1,0 +1,100 @@
+{
+  "nodes": [
+    {
+      "id": "plan-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Plan the review",
+        "nodeType": "plan",
+        "prompt": "You are a staff engineer about to review a pull request. Think step by step before reading any code.\n\n<task>\nReview the current uncommitted diff (or the most recent PR branch vs main) in the working directory. First, decide what to look at and in what order.\n</task>\n\nProduce a numbered review plan. For each step include:\n- **What**: which file, module, or change cluster\n- **Why**: what risk or quality concern motivates looking there\n- **Lens**: one of `correctness`, `design`, `tests`, `perf`, `style`\n\nKeep it to 3-6 steps. Do not read any code yet — only plan.\nOutput only the plan.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "review-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 420 },
+      "data": {
+        "label": "Walk the diff",
+        "nodeType": "review",
+        "prompt": "You are a staff engineer reviewing a pull request. Follow the plan below and walk through the diff.\n\n<plan>\n{{previous.output}}\n</plan>\n\nFor each meaningful issue you find, emit:\n\n<comment>\n  <severity>blocker | major | minor | nit</severity>\n  <location>file:line</location>\n  <issue>one-line description of the problem</issue>\n  <suggestion>concrete fix or alternative</suggestion>\n</comment>\n\nIf the diff is clean, say \"No review comments.\" on a single line. Do not flag style preferences as blockers.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 640 },
+      "data": {
+        "label": "Security pass",
+        "nodeType": "security",
+        "prompt": "You already reviewed the diff above. Now do a focused second pass on security only.\n\n<prior_review>\n{{previous.output}}\n</prior_review>\n\nLook for:\n- Injection (SQL, command, template, XSS)\n- Authn/authz regressions\n- Secrets or credentials in the diff\n- Unsafe file, network, or deserialization paths\n- Missing input validation at any new trust boundary\n\nFor each finding emit:\n\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line</location>\n  <issue>one-line description</issue>\n  <fix>one-sentence remediation</fix>\n</finding>\n\nIf nothing new, say \"No additional security findings.\" on a single line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "summarize-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 860 },
+      "data": {
+        "label": "Verdict",
+        "nodeType": "summarize",
+        "prompt": "Distill the PR review and security pass below into a verdict suitable for a reviewer dropping a single comment on the PR.\n\n<content>\n{{previous.output}}\n</content>\n\nFormat the response as:\n\n- **Verdict**: exactly one of `approve`, `request-changes`, or `comment`\n- **TL;DR**: one sentence overall impression\n- **Blockers**: bullets, one per blocker/critical, `file:line — issue` (omit section if none)\n- **Nice to have**: up to 3 bullets of optional improvements\n\nDrop anything that isn't actionable.",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 1080 },
+      "data": {
+        "label": "Human sign-off",
+        "nodeType": "pause",
+        "prompt": "Read the verdict above. Approve to post the review, or reject to send it back for another pass.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "plan-1->review-1",
+      "source": "plan-1",
+      "target": "review-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "review-1->security-1",
+      "source": "review-1",
+      "target": "security-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-1->summarize-1",
+      "source": "security-1",
+      "target": "summarize-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "summarize-1->pause-1",
+      "source": "summarize-1",
+      "target": "pause-1",
+      "type": "smoothstep"
+    }
+  ]
+}

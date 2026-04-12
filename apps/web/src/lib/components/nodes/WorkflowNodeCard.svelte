@@ -2,6 +2,8 @@
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import type { NodeData } from '$lib/stores/workflow.svelte';
 	import type { NodeType, NodeStatus } from '$lib/types/nodes';
+	import { translateError, type ErrorAction } from '$lib/errors/translate';
+	import NodeErrorCard from '$lib/components/NodeErrorCard.svelte';
 
 	let { data, selected }: NodeProps = $props();
 	const node = $derived(data as NodeData);
@@ -75,6 +77,11 @@
 		const trimmed = node.output.trim();
 		return trimmed.length > 160 ? trimmed.slice(-160) : trimmed;
 	});
+
+	function handleErrorAction(action: ErrorAction, _node: NodeData): void {
+		// TODO: wire actual handlers (open settings modal, focus node panel field, etc.)
+		console.log('node error action', action, _node.label);
+	}
 </script>
 
 <div
@@ -115,6 +122,14 @@
 	<div class="flex items-center justify-between border-t border-zinc-800/70 px-3 py-1.5">
 		<span class="truncate font-mono text-[10px] text-zinc-600">{node.model}</span>
 		<div class="flex items-center gap-2">
+			{#if node.fromCache}
+				<span
+					class="rounded border border-cyan-900/60 bg-cyan-500/10 px-1.5 text-[9px] font-medium text-cyan-300"
+					title="Result reused from local cache"
+				>
+					cached
+				</span>
+			{/if}
 			{#if node.costUsd !== undefined}
 				<span class="font-mono text-[10px] text-emerald-500/80">{formatCost(node.costUsd)}</span>
 			{/if}
@@ -132,12 +147,20 @@
 				class="line-clamp-3 font-mono text-[10px] leading-snug whitespace-pre-wrap text-emerald-200/80">{outputPreview}</pre>
 		</div>
 	{:else if node.error}
-		<div
-			class="max-h-20 overflow-hidden border-t border-red-900/40 bg-red-950/20 px-3 py-1.5"
-		>
-			<pre
-				class="line-clamp-3 font-mono text-[10px] leading-snug whitespace-pre-wrap text-red-300">{node.error}</pre>
-		</div>
+		{@const translated = translateError(node.error)}
+		{#if translated}
+			<NodeErrorCard
+				{translated}
+				onAction={() => handleErrorAction(translated.action, node)}
+			/>
+		{:else}
+			<div
+				class="max-h-20 overflow-hidden border-t border-red-900/40 bg-red-950/20 px-3 py-1.5"
+			>
+				<pre
+					class="line-clamp-3 font-mono text-[10px] leading-snug whitespace-pre-wrap text-red-300">{node.error}</pre>
+			</div>
+		{/if}
 	{/if}
 
 	<Handle

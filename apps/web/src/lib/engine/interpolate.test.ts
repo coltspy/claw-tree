@@ -112,6 +112,19 @@ describe('interpolatePrompt', () => {
 		expect(result).toBe('from-id');
 	});
 
+	it('resolves a reference by multi-word label', () => {
+		const a = node('a', 'Security Agent', 'found 3 vulns');
+		const b = node('b', 'Quality Agent', 'looks clean');
+		const c = node('c', 'Merge');
+		const result = interpolatePrompt(
+			'Security: {{Security Agent.output}} Quality: {{Quality Agent.output}}',
+			c,
+			[a, b, c],
+			[a, b, c]
+		);
+		expect(result).toBe('Security: found 3 vulns Quality: looks clean');
+	});
+
 	it('leaves text unchanged when braces do not match .output pattern', () => {
 		const a = node('a', 'A');
 		expect(interpolatePrompt('{{a}} and {a.output}', a, [a], [a])).toBe('{{a}} and {a.output}');

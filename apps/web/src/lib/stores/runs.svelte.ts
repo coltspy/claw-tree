@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import type { NodeData } from './workflow.svelte';
+import { loadWorkflow } from './workflow.svelte';
 import type { NodeStatus } from '$lib/types/nodes';
 
 export interface NodeRunResult {
@@ -142,4 +143,16 @@ export function clearAllRuns() {
 
 export function viewRun(runId: string | null) {
 	runs.viewingRunId = runId;
+}
+
+export function forkRun(runId: string): { success: true } | { success: false; error: string } {
+	const run = runs.list.find((r) => r.id === runId);
+	if (!run) return { success: false, error: 'Run not found' };
+	if (!run.snapshot || !Array.isArray(run.snapshot.nodes) || !Array.isArray(run.snapshot.edges)) {
+		return { success: false, error: 'Run snapshot is corrupted' };
+	}
+	return loadWorkflow({
+		nodes: run.snapshot.nodes,
+		edges: run.snapshot.edges
+	});
 }

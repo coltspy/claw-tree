@@ -1,0 +1,79 @@
+{
+  "nodes": [
+    {
+      "id": "inventory-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Inventory dependencies",
+        "nodeType": "custom",
+        "prompt": "You are taking inventory of a project's dependencies before a security audit.\n\n<task>\nRead any dependency manifests in the working directory: `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `Gemfile`, etc. Do not run any installer or network command — just read the files.\n</task>\n\nFor each manifest you find, list its direct dependencies in this format:\n\n<manifest>\n  <path>relative path to the file</path>\n  <ecosystem>npm | cargo | pip | go | gem | other</ecosystem>\n  <deps>\n    - name@version — runtime | dev\n  </deps>\n</manifest>\n\nAfter the manifests, add a short **Suspicious** section listing any dep that:\n- Looks abandoned (very old version pin)\n- Is a known-risky package (eval-based, unmaintained crypto, etc.)\n- Has a name you don't recognize\n\nIf nothing is suspicious, write \"Suspicious: none\" on its own line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 420 },
+      "data": {
+        "label": "CVE pass",
+        "nodeType": "security",
+        "prompt": "You are a security engineer auditing the dependency inventory below for known CVEs and supply-chain risk.\n\n<inventory>\n{{previous.output}}\n</inventory>\n\nFor each dependency that has a known vulnerability or notable risk, emit:\n\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <package>name@version</package>\n  <ecosystem>npm | cargo | pip | go | gem | other</ecosystem>\n  <issue>CVE id or one-line description of the risk</issue>\n  <fix>upgrade to X.Y.Z, replace with alternative, or remove</fix>\n</finding>\n\nDo not invent CVE ids. If you are unsure whether a version is affected, mark severity `low` and say so in the issue. If nothing is at risk, say \"No vulnerable dependencies found.\" on a single line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "summarize-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 640 },
+      "data": {
+        "label": "Prioritized actions",
+        "nodeType": "summarize",
+        "prompt": "Distill the dependency audit findings below into a prioritized action list a maintainer can work through top-to-bottom.\n\n<content>\n{{previous.output}}\n</content>\n\nFormat the response as:\n\n- **TL;DR**: one sentence on overall dependency health\n- **Now**: bullets for critical/high findings, each starting with a verb (`Upgrade`, `Replace`, `Remove`)\n- **Soon**: bullets for medium findings\n- **Watch**: bullets for low findings worth monitoring\n\nOmit any section that has no items. Each bullet must name the package and the concrete next step.",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 860 },
+      "data": {
+        "label": "Human sign-off",
+        "nodeType": "pause",
+        "prompt": "Read the prioritized action list above. Approve to end the workflow, or reject if the audit looks incomplete and should be re-run.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "inventory-1->security-1",
+      "source": "inventory-1",
+      "target": "security-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-1->summarize-1",
+      "source": "security-1",
+      "target": "summarize-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "summarize-1->pause-1",
+      "source": "summarize-1",
+      "target": "pause-1",
+      "type": "smoothstep"
+    }
+  ]
+}

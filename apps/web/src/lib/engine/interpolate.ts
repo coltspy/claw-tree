@@ -1,7 +1,7 @@
 import type { Node } from '@xyflow/svelte';
 import type { NodeData } from '$lib/stores/workflow.svelte';
 
-const REF_PATTERN = /\{\{\s*([^}\s]+?)\s*\.output\s*\}\}/g;
+const REF_PATTERN = /\{\{\s*([^}]+?)\s*\.output\s*\}\}/g;
 
 export function interpolatePrompt(
 	prompt: string,

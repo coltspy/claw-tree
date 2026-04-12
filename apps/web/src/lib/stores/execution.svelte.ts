@@ -7,6 +7,12 @@ import {
 	type Run
 } from './runs.svelte';
 import { settings } from './settings.svelte';
+import {
+	cacheControl,
+	computeCacheKey,
+	getCached,
+	setCached
+} from './cache.svelte';
 import { topologicalSort, groupByDepth } from '$lib/engine/toposort';
 import { validateWorkflow, type ValidationError } from '$lib/engine/validate';
 import { interpolatePrompt } from '$lib/engine/interpolate';
@@ -56,7 +62,8 @@ export async function runWorkflow() {
 			error: undefined,
 			costUsd: undefined,
 			inputTokens: undefined,
-			outputTokens: undefined
+			outputTokens: undefined,
+			fromCache: undefined
 		});
 	}
 
@@ -119,6 +126,7 @@ export async function runWorkflow() {
 		execution.running = false;
 		execution.activeNodeIds = new Set();
 		execution.pendingApproval = null;
+		cacheControl.bypassNext = false;
 
 		const finalRun = getRun(runId);
 		const anyError = finalRun
@@ -450,6 +458,42 @@ async function streamNode(
 	resumeSessionId: string | undefined,
 	signal: AbortSignal
 ): Promise<StreamResult> {
+	const CACHEABLE_TYPES = new Set(['review', 'confirm', 'summarize']);
+	const canCache = CACHEABLE_TYPES.has(nodeData.nodeType);
+
+	const cacheKey = canCache
+		? await computeCacheKey({
+				prompt,
+				model: nodeData.model,
+				permissionMode: nodeData.permissionMode,
+				allowedTools: nodeData.allowedTools,
+				outputFormat: nodeData.outputFormat,
+				resumeSessionId
+			})
+		: '';
+
+	if (canCache && !cacheControl.bypassNext) {
+		const cached = getCached(cacheKey);
+		if (cached) {
+			updateNodeData(nodeId, {
+				output: cached.output,
+				sessionId: cached.sessionId,
+				costUsd: cached.costUsd,
+				inputTokens: cached.inputTokens,
+				outputTokens: cached.outputTokens,
+				fromCache: true
+			});
+			updateNodeResult(runId, nodeId, { output: cached.output });
+			return {
+				output: cached.output,
+				sessionId: cached.sessionId,
+				costUsd: cached.costUsd,
+				inputTokens: cached.inputTokens,
+				outputTokens: cached.outputTokens
+			};
+		}
+	}
+
 	const response = await fetch('/api/run', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -488,17 +532,28 @@ async function streamNode(
 
 	const { visible, meta } = extractMeta(accumulated);
 
-	if (nodeData.outputFormat === 'json') {
-		return { ...parseJsonOutput(visible), sessionId: meta.sessionId };
+	const result: StreamResult =
+		nodeData.outputFormat === 'json'
+			? { ...parseJsonOutput(visible), sessionId: meta.sessionId }
+			: {
+					output: visible.trim(),
+					sessionId: meta.sessionId,
+					costUsd: meta.costUsd,
+					inputTokens: meta.inputTokens,
+					outputTokens: meta.outputTokens
+				};
+
+	if (canCache) {
+		setCached(cacheKey, {
+			output: result.output,
+			sessionId: result.sessionId,
+			costUsd: result.costUsd,
+			inputTokens: result.inputTokens,
+			outputTokens: result.outputTokens
+		});
 	}
 
-	return {
-		output: visible.trim(),
-		sessionId: meta.sessionId,
-		costUsd: meta.costUsd,
-		inputTokens: meta.inputTokens,
-		outputTokens: meta.outputTokens
-	};
+	return result;
 }
 
 function parseJsonOutput(raw: string): StreamResult {

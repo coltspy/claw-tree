@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    {
+      "id": "hello-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Say hello",
+        "nodeType": "custom",
+        "prompt": "Say hello from claw-tree in one short sentence, and mention one cool thing you could do if you were wired into a workflow graph.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": []
+}

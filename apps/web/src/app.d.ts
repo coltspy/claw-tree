@@ -10,4 +10,9 @@ declare global {
 	}
 }
 
+declare module '*.clawtree.json' {
+	const value: { nodes: unknown[]; edges: unknown[] };
+	export default value;
+}
+
 export {};

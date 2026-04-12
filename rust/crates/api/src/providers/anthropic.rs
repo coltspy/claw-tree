@@ -470,6 +470,7 @@ impl AnthropicClient {
         let request_url = format!("{}/v1/messages", self.base_url.trim_end_matches('/'));
         let mut request_body = self.request_profile.render_json_body(request)?;
         strip_unsupported_beta_body_fields(&mut request_body);
+        apply_prompt_cache_control(&mut request_body);
         let request_builder = self.build_request(&request_url).json(&request_body);
         request_builder.send().await.map_err(ApiError::from)
     }
@@ -583,6 +584,44 @@ impl AnthropicClient {
     fn jittered_backoff_for_attempt(&self, attempt: u32) -> Result<Duration, ApiError> {
         let base = self.backoff_for_attempt(attempt)?;
         Ok(base + jitter_for_base(base))
+    }
+}
+
+/// Wrap the system prompt and last tool definition in Anthropic's
+/// prompt-cache breakpoints so repeated calls get the 90% cached-read discount.
+/// claw-tree patch: without this, every `-p` invocation pays full price for
+/// the ~19k-token system prompt + tool definitions.
+fn apply_prompt_cache_control(body: &mut serde_json::Value) {
+    let Some(obj) = body.as_object_mut() else {
+        return;
+    };
+
+    if let Some(system) = obj.get_mut("system") {
+        if let Some(system_str) = system.as_str() {
+            let text = system_str.to_string();
+            *system = serde_json::json!([
+                {
+                    "type": "text",
+                    "text": text,
+                    "cache_control": { "type": "ephemeral" }
+                }
+            ]);
+        }
+    }
+
+    if let Some(tools) = obj.get_mut("tools") {
+        if let Some(tools_array) = tools.as_array_mut() {
+            if let Some(last_tool) = tools_array.last_mut() {
+                if let Some(last_obj) = last_tool.as_object_mut() {
+                    if !last_obj.contains_key("cache_control") {
+                        last_obj.insert(
+                            "cache_control".to_string(),
+                            serde_json::json!({ "type": "ephemeral" }),
+                        );
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -1,0 +1,78 @@
+{
+  "nodes": [
+    {
+      "id": "plan-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Plan the audit",
+        "nodeType": "plan",
+        "prompt": "You are a senior engineer planning a task. Think step by step before doing any work.\n\n<task>\nAudit the claw-tree repository for security issues, focusing on the web server endpoints and child-process spawning logic.\n</task>\n\nProduce a numbered plan. For each step include:\n- **What**: what specifically will be done\n- **Where**: which files, directories, or components it touches\n- **Why**: why the step is necessary\n- **Risk**: what could go wrong or break\n\nKeep the plan tight — 3 to 7 steps total. Do not execute anything yet.\nOutput only the plan.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 420 },
+      "data": {
+        "label": "Run the audit",
+        "nodeType": "security",
+        "prompt": "You are a senior application security engineer. Audit the current working directory for security issues, following the plan below.\n\n<plan>\n{{previous.output}}\n</plan>\n\nFocus on:\n- Injection vulnerabilities (SQL, command, XSS, template)\n- Authentication and authorization flaws\n- Secrets, API keys, or credentials committed to source\n- Unsafe deserialization, eval, or file operations\n- Missing input validation at trust boundaries\n\nFor each finding, report in this exact format:\n\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line</location>\n  <issue>one-line description</issue>\n  <fix>one-sentence suggested fix</fix>\n</finding>\n\nIf you find no issues, say \"No security issues found.\" on a single line.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "summarize-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 640 },
+      "data": {
+        "label": "Summarize findings",
+        "nodeType": "summarize",
+        "prompt": "Summarize the audit findings below into a concise brief suitable for a human skimming a dashboard.\n\n<content>\n{{previous.output}}\n</content>\n\nFormat the response as:\n\n- **TL;DR**: one sentence capturing overall security posture\n- **Key points**: 3-5 bullets, each under 15 words, ordered by severity\n- **Action items**: bullets starting with a verb, one per critical/high finding\n\nDrop anything that isn't actionable or informative.",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "pause-1",
+      "type": "workflow",
+      "position": { "x": 200, "y": 860 },
+      "data": {
+        "label": "Review before acting",
+        "nodeType": "pause",
+        "prompt": "Review the audit summary above.\n\nApprove to end the workflow, or reject if the audit looks incomplete or suspicious and needs to be re-run.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "plan-1->security-1",
+      "source": "plan-1",
+      "target": "security-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-1->summarize-1",
+      "source": "security-1",
+      "target": "summarize-1",
+      "type": "smoothstep"
+    },
+    {
+      "id": "summarize-1->pause-1",
+      "source": "summarize-1",
+      "target": "pause-1",
+      "type": "smoothstep"
+    }
+  ]
+}

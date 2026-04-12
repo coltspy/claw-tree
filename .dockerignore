@@ -1,0 +1,42 @@
+# Build artifacts
+rust/target/
+apps/web/node_modules/
+apps/web/.svelte-kit/
+apps/web/build/
+apps/web/dist/
+
+# Local state
+.claude/
+.claude.json
+/.test
+/CLAUDE.local.md
+
+# Git + editor
+.git/
+.github/
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python (upstream claw-code)
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env files (never copy into image)
+.env
+.env.*
+!.env.example
+
+# Docs that aren't needed at runtime
+*.md
+!README.md

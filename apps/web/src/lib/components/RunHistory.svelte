@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { runs, viewRun, deleteRun, clearAllRuns, type Run, type RunStatus } from '$lib/stores/runs.svelte';
+	import { runs, viewRun, deleteRun, forkRun, clearAllRuns, type Run, type RunStatus } from '$lib/stores/runs.svelte';
 
 	const sortedRuns = $derived.by(() => [...runs.list].sort((a, b) => b.startedAt - a.startedAt));
 
@@ -28,6 +28,14 @@
 	function handleDelete(event: MouseEvent, runId: string) {
 		event.stopPropagation();
 		deleteRun(runId);
+	}
+
+	function handleFork(event: MouseEvent, runId: string) {
+		event.stopPropagation();
+		const result = forkRun(runId);
+		if (!result.success) {
+			console.warn(`Fork failed: ${result.error}`);
+		}
 	}
 
 	function handleRowKeydown(event: KeyboardEvent, runId: string) {
@@ -75,6 +83,21 @@
 						</div>
 						<div class="flex items-center gap-1">
 							<span class="text-[10px] text-zinc-500">{relativeTime(run.startedAt)}</span>
+							<button
+								type="button"
+								aria-label="Fork this run"
+								title="Fork — restore this run's workflow onto the canvas"
+								onclick={(e) => handleFork(e, run.id)}
+								class="ml-1 rounded p-0.5 text-zinc-500 opacity-0 hover:bg-zinc-700 hover:text-indigo-400 group-hover:opacity-100"
+							>
+								<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+									<circle cx="4" cy="3" r="1.5" />
+									<circle cx="12" cy="3" r="1.5" />
+									<circle cx="8" cy="13" r="1.5" />
+									<path d="M4 4.5v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2" stroke-linecap="round" />
+									<path d="M8 8.5v3" stroke-linecap="round" />
+								</svg>
+							</button>
 							<button
 								type="button"
 								aria-label="Delete run"

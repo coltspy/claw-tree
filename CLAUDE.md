@@ -1,21 +1,62 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
-## Detected stack
-- Languages: Rust.
-- Frameworks: none detected from the supported starter markers.
+## What this is
+
+claw-tree is a visual workflow builder + chat interface for the claw agent CLI.
+It is a monorepo with two main parts:
+
+- `rust/` — a forked Rust workspace from claw-code (the agent binary)
+- `apps/web/` — a SvelteKit web app (the visual UI)
+
+The web app spawns `claw` as a child process per workflow node. Sessions are
+shared across all interfaces (web canvas, chat panel, terminal) via
+`.claw/sessions/<id>.jsonl` files.
+
+## Stack
+
+- **Rust** (agent binary): Tokio, reqwest, serde, crossterm
+- **TypeScript/Svelte** (web UI): SvelteKit, Svelte 5, Svelte Flow, Tailwind v4, Vitest
 
 ## Verification
-- Run Rust verification from `rust/`: `cargo fmt`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`
-- `src/` and `tests/` are both present; update both surfaces together when behavior changes.
+
+### Web (from `apps/web/`)
+```
+npm run check          # svelte-check (TypeScript + Svelte)
+npm run test:unit      # Vitest engine tests (toposort, validate, interpolate, conditions)
+npm run lint           # ESLint + Prettier
+```
+
+### Rust (from `rust/`)
+```
+cargo fmt
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo build -p rusty-claude-cli
+```
 
 ## Repository shape
-- `rust/` contains the Rust workspace and active CLI/runtime implementation.
-- `src/` contains source files that should stay consistent with generated guidance and tests.
-- `tests/` contains validation surfaces that should be reviewed alongside code changes.
+
+- `rust/crates/rusty-claude-cli/` — the `claw` binary (3 fork patches in `src/main.rs`)
+- `rust/crates/api/` — Anthropic/OpenAI HTTP client (1 fork patch in `providers/anthropic.rs`)
+- `apps/web/src/lib/stores/` — Svelte 5 rune stores (workflow, execution, runs, settings, chat, cache, library, history, ui, canvas)
+- `apps/web/src/lib/engine/` — pure TS execution logic (toposort, validate, interpolate, conditions) with unit tests
+- `apps/web/src/lib/components/` — UI components
+- `apps/web/src/routes/api/` — SvelteKit server endpoints (`/api/run`, `/api/health`)
+- `examples/` — example `.clawtree.json` workflow files (also in `apps/web/static/examples/`)
+
+## Key conventions
+
+- Svelte 5 runes only (`$state`, `$derived`, `$effect`, `$props`). No Svelte 4 stores.
+- TypeScript strict mode. No `any` without justification.
+- Tailwind v4 syntax.
+- No comments unless the WHY is non-obvious.
+- Flag before modifying `rust/` — upstream parity matters.
+- Never hold a $state reference across `await` — always look up fresh via the store.
 
 ## Working agreement
-- Prefer small, reviewable changes and keep generated bootstrap files aligned with actual repo workflows.
-- Keep shared defaults in `.claude.json`; reserve `.claude/settings.local.json` for machine-local overrides.
-- Do not overwrite existing `CLAUDE.md` content automatically; update it intentionally when repo workflows change.
+
+- Prefer small, reviewable changes.
+- Run both `npm run check` (web) and `cargo build -p rusty-claude-cli` (Rust) before considering work done.
+- Keep example workflows in sync: `examples/` and `apps/web/static/examples/` should match.

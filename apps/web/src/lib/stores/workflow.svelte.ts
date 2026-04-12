@@ -28,6 +28,7 @@ export interface NodeData extends Record<string, unknown> {
 	inputTokens?: number;
 	outputTokens?: number;
 	sessionId?: string;
+	fromCache?: boolean;
 }
 
 export interface EdgeData extends Record<string, unknown> {
@@ -40,6 +41,13 @@ export const workflow = $state({
 });
 
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
+const CHEAP_MODEL = 'claude-haiku-4-5';
+const DEFAULT_PERMISSION_MODE: 'read-only' | 'workspace-write' | 'danger-full-access' =
+	'workspace-write';
+
+const MODEL_OVERRIDES: Partial<Record<NodeType, string>> = {
+	summarize: CHEAP_MODEL
+};
 
 const NODE_DEFAULTS: Record<NodeType, { label: string; prompt: string }> = {
 	security: {
@@ -230,7 +238,8 @@ export function addNodeAt(
 			label,
 			nodeType: type,
 			prompt,
-			model: DEFAULT_MODEL,
+			model: MODEL_OVERRIDES[type] ?? DEFAULT_MODEL,
+			permissionMode: type === 'pause' ? undefined : DEFAULT_PERMISSION_MODE,
 			failurePolicy: 'halt',
 			status: 'idle'
 		}
