@@ -1,0 +1,611 @@
+{
+  "nodes": [
+    {
+      "id": "lint-format",
+      "type": "workflow",
+      "position": { "x": 0, "y": 0 },
+      "data": {
+        "label": "Lint & Format Check",
+        "nodeType": "agent",
+        "prompt": "Run the project's linter and formatter in check mode.\n\nDetect the project type from config files (package.json, pyproject.toml, Cargo.toml, etc.) and run the appropriate commands:\n- JavaScript/TypeScript: eslint and prettier --check\n- Python: ruff check and ruff format --check\n- Rust: cargo fmt --check and cargo clippy\n\nReport each tool's result as PASS or FAIL with a one-line summary.\nIf any tool fails, quote the first 20 lines of output.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "typecheck-frontend",
+      "type": "workflow",
+      "position": { "x": 0, "y": 200 },
+      "data": {
+        "label": "Type Check Frontend",
+        "nodeType": "agent",
+        "prompt": "Run the frontend type checker.\n\nLook for a frontend directory (src/, app/, client/, frontend/, packages/web/) and run the appropriate type checker:\n- TypeScript: tsc --noEmit or svelte-check\n- Flow: flow check\n\nReport:\n- Total errors found\n- First 10 error locations with one-line descriptions\n- Verdict: PASS (0 errors) or FAIL",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "typecheck-backend",
+      "type": "workflow",
+      "position": { "x": 200, "y": 200 },
+      "data": {
+        "label": "Type Check Backend",
+        "nodeType": "agent",
+        "prompt": "Run the backend type checker.\n\nLook for a backend directory (server/, api/, backend/, packages/api/, rust/) and run the appropriate type checker:\n- TypeScript: tsc --noEmit\n- Rust: cargo check --workspace\n- Python: mypy or pyright\n\nReport:\n- Total errors found\n- First 10 error locations with one-line descriptions\n- Verdict: PASS (0 errors) or FAIL",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "code-quality-summary",
+      "type": "workflow",
+      "position": { "x": 100, "y": 400 },
+      "data": {
+        "label": "Code Quality Summary",
+        "nodeType": "summarize",
+        "prompt": "Merge the results from lint/format, frontend type check, and backend type check into a unified code quality report.\n\n<lint_results>\n{{Lint & Format Check.output}}\n</lint_results>\n\n<frontend_types>\n{{Type Check Frontend.output}}\n</frontend_types>\n\n<backend_types>\n{{Type Check Backend.output}}\n</backend_types>\n\nProduce:\n- **Overall**: PASS or FAIL\n- **Lint & Format**: one-line summary\n- **Frontend Types**: one-line summary\n- **Backend Types**: one-line summary\n- **Blockers**: list any errors that must be fixed before shipping (omit if none)",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "dep-audit",
+      "type": "workflow",
+      "position": { "x": 450, "y": 0 },
+      "data": {
+        "label": "Dependency Audit",
+        "nodeType": "security",
+        "prompt": "Audit all project dependencies for known vulnerabilities.\n\nRun the appropriate audit command for each package manager found:\n- npm: npm audit\n- yarn: yarn audit\n- pnpm: pnpm audit\n- cargo: cargo audit (if installed) or review Cargo.lock manually\n- pip: pip-audit or safety check\n\nFor each vulnerability found, report:\n- Package name and version\n- Severity (critical/high/medium/low)\n- CVE identifier if available\n- Whether a patched version exists\n\nEnd with a count: N critical, N high, N medium, N low.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "sast-scan",
+      "type": "workflow",
+      "position": { "x": 450, "y": 200 },
+      "data": {
+        "label": "SAST Scan",
+        "nodeType": "security",
+        "prompt": "Perform a static application security testing scan on the codebase.\n\nAnalyze all source files for:\n- SQL injection, command injection, XSS, SSRF\n- Unsafe deserialization or eval usage\n- Path traversal vulnerabilities\n- Insecure cryptographic usage (weak algorithms, hardcoded IVs)\n- Missing input validation at API boundaries\n- Insecure HTTP configurations (missing CORS, CSP headers)\n\nFor each finding:\n<finding>\n  <severity>critical | high | medium | low</severity>\n  <location>file:line</location>\n  <cwe>CWE-XXX</cwe>\n  <issue>one-line description</issue>\n  <fix>one-sentence remediation</fix>\n</finding>\n\nEnd with: SAST verdict: PASS, WARN, or FAIL.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "secret-detection",
+      "type": "workflow",
+      "position": { "x": 650, "y": 200 },
+      "data": {
+        "label": "Secret Detection",
+        "nodeType": "security",
+        "prompt": "Scan the entire repository for leaked secrets, credentials, and sensitive data.\n\nCheck for:\n- API keys, tokens, and passwords in source files\n- Private keys (RSA, SSH, PGP) committed to the repo\n- .env files or environment variable dumps in tracked files\n- Database connection strings with embedded credentials\n- Cloud provider credentials (AWS, GCP, Azure)\n- Webhook URLs with embedded tokens\n\nAlso verify:\n- .gitignore covers .env, *.pem, *.key, credentials.json\n- No secrets appear in git history (check recent commits)\n\nFor each finding, report the file, line, and type of secret.\nEnd with: Secret scan verdict: CLEAN or LEAKED.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "license-compliance",
+      "type": "workflow",
+      "position": { "x": 550, "y": 400 },
+      "data": {
+        "label": "License Compliance",
+        "nodeType": "review",
+        "prompt": "Review all dependency licenses for compliance issues.\n\n{{Dependency Audit.output}}\n\nCheck:\n- Are there any GPL/AGPL/SSPL dependencies in a proprietary project?\n- Any dependencies with no license specified?\n- Any license conflicts between dependencies?\n- Are attribution requirements met (MIT, Apache 2.0 NOTICE files)?\n\nFor each issue:\n- **Package**: name@version\n- **License**: detected license\n- **Risk**: high/medium/low\n- **Action**: what needs to happen\n\nEnd with: License compliance: PASS, REVIEW_NEEDED, or FAIL.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "security-summary",
+      "type": "workflow",
+      "position": { "x": 550, "y": 600 },
+      "data": {
+        "label": "Security Summary",
+        "nodeType": "summarize",
+        "prompt": "Merge all security scan results into a unified security posture report.\n\n<dependency_audit>\n{{Dependency Audit.output}}\n</dependency_audit>\n\n<sast_results>\n{{SAST Scan.output}}\n</sast_results>\n\n<secret_scan>\n{{Secret Detection.output}}\n</secret_scan>\n\n<license_check>\n{{License Compliance.output}}\n</license_check>\n\nProduce:\n- **Security posture**: one of STRONG, ACCEPTABLE, WEAK, CRITICAL\n- **Dependencies**: one-line summary with vuln counts\n- **SAST**: one-line summary with finding counts by severity\n- **Secrets**: CLEAN or LEAKED with details\n- **Licenses**: one-line compliance status\n- **Must-fix before release**: numbered list of blockers (omit if none)",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "unit-tests-frontend",
+      "type": "workflow",
+      "position": { "x": 850, "y": 0 },
+      "data": {
+        "label": "Unit Tests Frontend",
+        "nodeType": "test",
+        "prompt": "Run the frontend unit test suite.\n\nDetect the test framework from config files and run it:\n- Vitest: npx vitest run\n- Jest: npx jest\n- Mocha: npx mocha\n\nIf tests are in a subdirectory (src/, app/, client/), scope the run accordingly.\n\nReport:\n<test_result>\n  <framework>detected framework</framework>\n  <command>exact command run</command>\n  <total>N</total>\n  <passed>N</passed>\n  <failed>N</failed>\n  <skipped>N</skipped>\n  <duration>Ns</duration>\n</test_result>\n\nIf any tests failed, quote each failure with file, test name, and error message.\nVerdict: PASS (all green) or FAIL.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "unit-tests-backend",
+      "type": "workflow",
+      "position": { "x": 1050, "y": 0 },
+      "data": {
+        "label": "Unit Tests Backend",
+        "nodeType": "test",
+        "prompt": "Run the backend unit test suite.\n\nDetect the test framework and run it:\n- Rust: cargo test --workspace\n- Node.js: look for test scripts in the server/api package\n- Python: pytest\n- Go: go test ./...\n\nReport:\n<test_result>\n  <framework>detected framework</framework>\n  <command>exact command run</command>\n  <total>N</total>\n  <passed>N</passed>\n  <failed>N</failed>\n  <skipped>N</skipped>\n  <duration>Ns</duration>\n</test_result>\n\nIf any tests failed, quote each failure with file, test name, and error message.\nVerdict: PASS (all green) or FAIL.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "integration-tests",
+      "type": "workflow",
+      "position": { "x": 850, "y": 200 },
+      "data": {
+        "label": "Integration Tests",
+        "nodeType": "test",
+        "prompt": "Run the project's integration test suite.\n\nLook for integration tests in common locations:\n- tests/integration/, test/integration/, __tests__/integration/\n- Files matching *.integration.test.*, *.int.test.*\n- Rust: tests/ directory with #[test] functions that hit real services\n\nIf no dedicated integration tests exist, report that finding.\n\nRun any found tests and report results in the same format as unit tests.\nNote any tests that require external services (databases, APIs) and whether those services were available.\n\nVerdict: PASS, FAIL, or NOT_FOUND.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "e2e-tests",
+      "type": "workflow",
+      "position": { "x": 1050, "y": 200 },
+      "data": {
+        "label": "E2E Tests",
+        "nodeType": "test",
+        "prompt": "Run the project's end-to-end test suite.\n\nLook for E2E test configurations:\n- Playwright: playwright.config.ts\n- Cypress: cypress.config.ts\n- Selenium: webdriver configs\n\nIf found, run the E2E suite in headless mode. If the dev server needs to be running, check if there's a test script that handles startup.\n\nReport:\n- Framework detected\n- Number of test files and specs\n- Pass/fail counts\n- Any flaky tests (tests that passed on retry)\n- Screenshots or traces location if failures occurred\n\nVerdict: PASS, FAIL, FLAKY, or NOT_CONFIGURED.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "coverage-analysis",
+      "type": "workflow",
+      "position": { "x": 950, "y": 400 },
+      "data": {
+        "label": "Coverage Analysis",
+        "nodeType": "review",
+        "prompt": "Analyze test coverage across all test suites that were run.\n\n<frontend_tests>\n{{Unit Tests Frontend.output}}\n</frontend_tests>\n\n<backend_tests>\n{{Unit Tests Backend.output}}\n</backend_tests>\n\n<integration_tests>\n{{Integration Tests.output}}\n</integration_tests>\n\n<e2e_tests>\n{{E2E Tests.output}}\n</e2e_tests>\n\nIf coverage reports were generated, analyze them. Otherwise, estimate coverage gaps by examining which source files have no corresponding test files.\n\nReport:\n- **Line coverage**: percentage if available\n- **Branch coverage**: percentage if available\n- **Untested critical paths**: list files/modules with no test coverage that handle user data, auth, or payments\n- **Recommendation**: specific files that most need tests added\n\nVerdict: GOOD (>80%), ADEQUATE (60-80%), or INSUFFICIENT (<60%).",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "test-summary",
+      "type": "workflow",
+      "position": { "x": 950, "y": 600 },
+      "data": {
+        "label": "Test Summary",
+        "nodeType": "summarize",
+        "prompt": "Merge all test results and coverage analysis into a unified test report.\n\n<frontend_unit>\n{{Unit Tests Frontend.output}}\n</frontend_unit>\n\n<backend_unit>\n{{Unit Tests Backend.output}}\n</backend_unit>\n\n<integration>\n{{Integration Tests.output}}\n</integration>\n\n<e2e>\n{{E2E Tests.output}}\n</e2e>\n\n<coverage>\n{{Coverage Analysis.output}}\n</coverage>\n\nProduce:\n- **Test health**: STRONG, ADEQUATE, or WEAK\n- **Unit tests**: total pass/fail across frontend and backend\n- **Integration tests**: one-line summary\n- **E2E tests**: one-line summary\n- **Coverage**: one-line summary with percentage if available\n- **Regressions detected**: list any failures that suggest new bugs (omit if none)",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "api-docs-check",
+      "type": "workflow",
+      "position": { "x": 1300, "y": 0 },
+      "data": {
+        "label": "API Docs Check",
+        "nodeType": "review",
+        "prompt": "Review the project's API documentation for completeness and accuracy.\n\nCheck:\n- OpenAPI/Swagger specs: are they present and do they match the actual endpoints?\n- JSDoc/TSDoc/Rustdoc: are public functions documented?\n- API endpoint documentation: do all routes have descriptions, parameter types, and response schemas?\n- Are there example requests/responses?\n- Are error responses documented?\n\nFor each gap found:\n- **Location**: file or endpoint\n- **Issue**: what's missing or outdated\n- **Severity**: high (public API undocumented), medium (internal API), low (minor gap)\n\nVerdict: COMPLETE, PARTIAL, or MISSING.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "readme-freshness",
+      "type": "workflow",
+      "position": { "x": 1300, "y": 200 },
+      "data": {
+        "label": "README Freshness",
+        "nodeType": "review",
+        "prompt": "Evaluate whether the project's README and getting-started docs are current.\n\nCheck:\n- Does the README exist and is it non-trivial?\n- Do setup instructions actually work? (Check referenced commands, file paths, env vars)\n- Are screenshots or diagrams outdated?\n- Does the tech stack description match actual dependencies?\n- Are contribution guidelines present?\n- Is the license file present and correct?\n\nFor each issue:\n- **Section**: which part of the README\n- **Problem**: what's wrong or outdated\n- **Suggested fix**: one sentence\n\nVerdict: CURRENT, STALE, or MISSING.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "changelog-update",
+      "type": "workflow",
+      "position": { "x": 1300, "y": 400 },
+      "data": {
+        "label": "Changelog Update",
+        "nodeType": "agent",
+        "prompt": "Review and prepare the changelog for the upcoming release.\n\nAnalyze recent git history (last 50 commits or since last tag) and:\n1. Categorize changes into: Added, Changed, Fixed, Deprecated, Removed, Security\n2. Write clear, user-facing descriptions for each change\n3. Check if CHANGELOG.md exists and follows Keep a Changelog format\n4. Draft the new version's changelog entry\n\nOutput the draft changelog entry in Keep a Changelog format:\n\n## [Unreleased]\n### Added\n- ...\n### Changed\n- ...\n### Fixed\n- ...\n\nInclude only meaningful user-facing changes, not internal refactors.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "docs-summary",
+      "type": "workflow",
+      "position": { "x": 1300, "y": 600 },
+      "data": {
+        "label": "Docs Summary",
+        "nodeType": "summarize",
+        "prompt": "Merge documentation review results into a unified docs status report.\n\n<api_docs>\n{{API Docs Check.output}}\n</api_docs>\n\n<readme>\n{{README Freshness.output}}\n</readme>\n\n<changelog>\n{{Changelog Update.output}}\n</changelog>\n\nProduce:\n- **Docs health**: GOOD, NEEDS_WORK, or POOR\n- **API docs**: one-line summary\n- **README**: one-line summary\n- **Changelog**: one-line summary (ready or needs drafting)\n- **Action items**: numbered list of docs tasks to complete before release (omit if none)",
+        "model": "claude-haiku-4-5",
+        "failurePolicy": "skip",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "ship-readiness",
+      "type": "workflow",
+      "position": { "x": 650, "y": 850 },
+      "data": {
+        "label": "Ship Readiness Report",
+        "nodeType": "plan",
+        "prompt": "You are the release manager. Synthesize all four track summaries into a comprehensive ship readiness report.\n\n<code_quality>\n{{Code Quality Summary.output}}\n</code_quality>\n\n<security>\n{{Security Summary.output}}\n</security>\n\n<testing>\n{{Test Summary.output}}\n</testing>\n\n<documentation>\n{{Docs Summary.output}}\n</documentation>\n\nProduce a structured readiness report:\n\n# Ship Readiness Report\n\n## Executive Summary\nOne paragraph overall assessment.\n\n## Track Results\n| Track | Status | Blockers |\n|-------|--------|----------|\n| Code Quality | PASS/FAIL | count |\n| Security | PASS/FAIL | count |\n| Testing | PASS/FAIL | count |\n| Documentation | PASS/FAIL | count |\n\n## Blockers (must fix)\nNumbered list of items that block release.\n\n## Warnings (should fix)\nNumbered list of items that should be addressed but aren't blockers.\n\n## Release Recommendation\nOne of: SHIP IT, SHIP WITH CAVEATS, DO NOT SHIP\nWith a one-sentence justification.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "release-verdict",
+      "type": "workflow",
+      "position": { "x": 650, "y": 1050 },
+      "data": {
+        "label": "Release Verdict",
+        "nodeType": "confirm",
+        "prompt": "Review the ship readiness report and render a final automated verdict.\n\n{{previous.output}}\n\nVerify:\n- Are all blockers genuinely blocking? (no inflated severities)\n- Is the release recommendation consistent with the track results?\n- Were any critical issues downplayed or missed in the summary?\n- Would you be comfortable deploying this to production?\n\nRespond with:\n- **Verdict**: APPROVED, CONDITIONAL, or REJECTED\n- **Conditions** (if conditional): numbered list of must-do items\n- **Reasoning**: 2-3 sentences justifying the verdict\n- **Risk level**: LOW, MEDIUM, or HIGH",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "human-signoff",
+      "type": "workflow",
+      "position": { "x": 650, "y": 1250 },
+      "data": {
+        "label": "Human Sign-off",
+        "nodeType": "pause",
+        "prompt": "All automated checks are complete. The release verdict is in.\n\nReview the full pipeline results above, then approve to proceed with release tagging and staging deployment, or reject to halt the pipeline.\n\nThis is your last chance to catch anything the automated checks missed.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "tag-release",
+      "type": "workflow",
+      "position": { "x": 450, "y": 1450 },
+      "data": {
+        "label": "Tag Release",
+        "nodeType": "agent",
+        "prompt": "Create the release tag and prepare release artifacts.\n\n{{Ship Readiness Report.output}}\n\n1. Determine the next version number from the changelog and current tags (follow semver)\n2. Create an annotated git tag with the version number\n3. Generate release notes from the changelog entry\n4. List all artifacts that should be included in the release (binaries, packages, Docker images)\n\nOutput:\n- **Version**: vX.Y.Z\n- **Tag**: created or dry-run\n- **Release notes**: the formatted notes\n- **Artifacts**: list of what to publish",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "deploy-staging",
+      "type": "workflow",
+      "position": { "x": 850, "y": 1450 },
+      "data": {
+        "label": "Deploy to Staging",
+        "nodeType": "agent",
+        "prompt": "Deploy the tagged release to the staging environment.\n\nDetect the deployment method from project config:\n- Docker: build image, push to registry, update staging compose/k8s\n- Vercel/Netlify: trigger staging deployment\n- Custom: look for deploy scripts in scripts/, .github/workflows/, Makefile\n\nExecute the staging deployment and report:\n- **Method**: how the deployment was done\n- **Environment**: staging URL or endpoint\n- **Version**: what version was deployed\n- **Status**: SUCCESS or FAILED\n- **Logs**: last 20 lines of deployment output if failed",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "smoke-tests",
+      "type": "workflow",
+      "position": { "x": 650, "y": 1650 },
+      "data": {
+        "label": "Smoke Tests on Staging",
+        "nodeType": "test",
+        "prompt": "Run smoke tests against the staging deployment to verify it's working.\n\n<deploy_result>\n{{Deploy to Staging.output}}\n</deploy_result>\n\nPerform these checks:\n1. Health endpoint returns 200\n2. Main page loads without errors\n3. API endpoints respond with correct status codes\n4. Authentication flow works (if applicable)\n5. Critical user paths complete without errors\n6. No console errors or unhandled exceptions in browser\n7. Response times are within acceptable limits (<2s for pages, <500ms for API)\n\nFor each check:\n- **Check**: name\n- **Status**: PASS or FAIL\n- **Details**: response time, status code, or error message\n\nOverall verdict: HEALTHY, DEGRADED, or DOWN.",
+        "model": "claude-sonnet-4-6",
+        "permissionMode": "read-only",
+        "resumeFromPrevious": true,
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    },
+    {
+      "id": "promote-production",
+      "type": "workflow",
+      "position": { "x": 650, "y": 1850 },
+      "data": {
+        "label": "Promote to Production",
+        "nodeType": "pause",
+        "prompt": "Staging smoke tests are complete.\n\n<smoke_test_results>\n{{Smoke Tests on Staging.output}}\n</smoke_test_results>\n\n<release_tag>\n{{Tag Release.output}}\n</release_tag>\n\nThis is the final gate before production deployment. Review the staging results and the release tag.\n\nApprove to promote the staging build to production, or reject to rollback the staging deployment and investigate.",
+        "model": "claude-sonnet-4-6",
+        "failurePolicy": "halt",
+        "status": "idle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "lint-format->typecheck-frontend",
+      "source": "lint-format",
+      "target": "typecheck-frontend",
+      "type": "smoothstep"
+    },
+    {
+      "id": "lint-format->typecheck-backend",
+      "source": "lint-format",
+      "target": "typecheck-backend",
+      "type": "smoothstep"
+    },
+    {
+      "id": "typecheck-frontend->code-quality-summary",
+      "source": "typecheck-frontend",
+      "target": "code-quality-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "typecheck-backend->code-quality-summary",
+      "source": "typecheck-backend",
+      "target": "code-quality-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "lint-format->code-quality-summary",
+      "source": "lint-format",
+      "target": "code-quality-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "dep-audit->sast-scan",
+      "source": "dep-audit",
+      "target": "sast-scan",
+      "type": "smoothstep"
+    },
+    {
+      "id": "dep-audit->secret-detection",
+      "source": "dep-audit",
+      "target": "secret-detection",
+      "type": "smoothstep"
+    },
+    {
+      "id": "dep-audit->license-compliance",
+      "source": "dep-audit",
+      "target": "license-compliance",
+      "type": "smoothstep"
+    },
+    {
+      "id": "sast-scan->security-summary",
+      "source": "sast-scan",
+      "target": "security-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "secret-detection->security-summary",
+      "source": "secret-detection",
+      "target": "security-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "license-compliance->security-summary",
+      "source": "license-compliance",
+      "target": "security-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "dep-audit->security-summary",
+      "source": "dep-audit",
+      "target": "security-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-frontend->integration-tests",
+      "source": "unit-tests-frontend",
+      "target": "integration-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-backend->integration-tests",
+      "source": "unit-tests-backend",
+      "target": "integration-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-frontend->e2e-tests",
+      "source": "unit-tests-frontend",
+      "target": "e2e-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-backend->e2e-tests",
+      "source": "unit-tests-backend",
+      "target": "e2e-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "integration-tests->coverage-analysis",
+      "source": "integration-tests",
+      "target": "coverage-analysis",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e2e-tests->coverage-analysis",
+      "source": "e2e-tests",
+      "target": "coverage-analysis",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-frontend->coverage-analysis",
+      "source": "unit-tests-frontend",
+      "target": "coverage-analysis",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-backend->coverage-analysis",
+      "source": "unit-tests-backend",
+      "target": "coverage-analysis",
+      "type": "smoothstep"
+    },
+    {
+      "id": "coverage-analysis->test-summary",
+      "source": "coverage-analysis",
+      "target": "test-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-frontend->test-summary",
+      "source": "unit-tests-frontend",
+      "target": "test-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "unit-tests-backend->test-summary",
+      "source": "unit-tests-backend",
+      "target": "test-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "integration-tests->test-summary",
+      "source": "integration-tests",
+      "target": "test-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e2e-tests->test-summary",
+      "source": "e2e-tests",
+      "target": "test-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "api-docs-check->readme-freshness",
+      "source": "api-docs-check",
+      "target": "readme-freshness",
+      "type": "smoothstep"
+    },
+    {
+      "id": "readme-freshness->changelog-update",
+      "source": "readme-freshness",
+      "target": "changelog-update",
+      "type": "smoothstep"
+    },
+    {
+      "id": "api-docs-check->docs-summary",
+      "source": "api-docs-check",
+      "target": "docs-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "readme-freshness->docs-summary",
+      "source": "readme-freshness",
+      "target": "docs-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "changelog-update->docs-summary",
+      "source": "changelog-update",
+      "target": "docs-summary",
+      "type": "smoothstep"
+    },
+    {
+      "id": "code-quality-summary->ship-readiness",
+      "source": "code-quality-summary",
+      "target": "ship-readiness",
+      "type": "smoothstep"
+    },
+    {
+      "id": "security-summary->ship-readiness",
+      "source": "security-summary",
+      "target": "ship-readiness",
+      "type": "smoothstep"
+    },
+    {
+      "id": "test-summary->ship-readiness",
+      "source": "test-summary",
+      "target": "ship-readiness",
+      "type": "smoothstep"
+    },
+    {
+      "id": "docs-summary->ship-readiness",
+      "source": "docs-summary",
+      "target": "ship-readiness",
+      "type": "smoothstep"
+    },
+    {
+      "id": "ship-readiness->release-verdict",
+      "source": "ship-readiness",
+      "target": "release-verdict",
+      "type": "smoothstep"
+    },
+    {
+      "id": "release-verdict->human-signoff",
+      "source": "release-verdict",
+      "target": "human-signoff",
+      "type": "smoothstep"
+    },
+    {
+      "id": "human-signoff->tag-release",
+      "source": "human-signoff",
+      "target": "tag-release",
+      "type": "smoothstep"
+    },
+    {
+      "id": "human-signoff->deploy-staging",
+      "source": "human-signoff",
+      "target": "deploy-staging",
+      "type": "smoothstep"
+    },
+    {
+      "id": "tag-release->smoke-tests",
+      "source": "tag-release",
+      "target": "smoke-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "deploy-staging->smoke-tests",
+      "source": "deploy-staging",
+      "target": "smoke-tests",
+      "type": "smoothstep"
+    },
+    {
+      "id": "smoke-tests->promote-production",
+      "source": "smoke-tests",
+      "target": "promote-production",
+      "type": "smoothstep"
+    }
+  ]
+}

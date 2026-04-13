@@ -1,115 +1,63 @@
+<p align="center">
+  <img src="example.png" alt="claw-tree workflow canvas" width="100%" />
+</p>
+
 # claw-tree
 
-A visual workflow builder and chat interface for the **claw** agent CLI
-(a Rust reimplementation of Claude Code). Talk to the agent in a terminal
-or in your browser, go a
+A visual workflow builder and chat interface for the **claw** agent CLI — design multi-step AI workflows as graphs, run them end-to-end, and let nodes share memory via session continuity.
 
-claw-tree is a monorepo containing:
+---
 
-- A **customized fork of claw-code** (in `rust/`) — the agent binary that
-  actually talks to Anthropic / OpenAI. See [`UPSTREAM.md`](./UPSTREAM.md)
-  for the upstream project's own docs.
-- A **SvelteKit web app** (in `apps/web/`) — a visual canvas where you drag
-  nodes, connect them, configure prompts per step, and click Run. Also
-  includes a chat panel for direct conversations.
+## What is this
 
-The Rust binary is patched to emit `[claw-tree-session]` and
-`[claw-tree-usage]` markers on stderr so the web side can capture session IDs
-and cost data per invocation. It also accepts `-p` + `--resume` together,
-which upstream claw does not — that's what makes cross-node session
-continuity possible.
+claw-tree is a monorepo with two parts:
+
+- **A customized fork of [claw-code](https://github.com/ultraworkers/claw-code)** (in `rust/`) — the Rust agent binary that talks to Anthropic, OpenAI, and Z.AI.
+- **A SvelteKit web app** (in `apps/web/`) — a visual canvas where you drag nodes, connect them, configure prompts, and click Run.
+
+One agent, three interfaces: **web canvas**, **in-browser chat**, and **terminal REPL**. Sessions are portable between all three.
 
 ## Quickstart
 
 Prerequisites: **Node.js 20+**, **Rust 1.80+**, and **git**.
 
 ```bash
-# From the repo root:
-./setup.sh                  # macOS / Linux    (normal setup)
-./setup.sh --global         # same, plus install `claw` on your PATH
+# Setup (builds the Rust binary + installs web deps)
+./setup.sh                  # macOS / Linux
 .\setup.ps1                 # Windows PowerShell
-.\setup.ps1 -Global         # same, plus install `claw` on your PATH
 
-# Then launch everything with one command:
+# Launch
 ./claw-tree.sh              # macOS / Linux
 .\claw-tree.ps1             # Windows
-# OR start manually:
-cd apps/web && npm run dev
-# Open http://localhost:5173
+# Opens http://127.0.0.1:5173
 ```
 
-> **`--global` installs `claw` via `cargo install --path` into `~/.cargo/bin`.**
-> After that, you can type `claw` from any terminal (terminal mode) without
-> specifying the full path to the binary. The web UI always uses the debug
-> build at `rust/target/debug/claw.exe` regardless of whether you installed
-> globally, so both paths always work.
-
-On first launch, click the **gear icon** in the top-right of the toolbar
-and paste your Anthropic API key. It's stored in browser localStorage and
-sent from your browser to the local SvelteKit server, which passes it to
-the claw subprocess as an environment variable. Nothing leaves your machine
-except the API call to Anthropic.
-
-## The three modes
-
-claw-tree is designed around a simple idea: **one agent, three interfaces.**
-Everything runs against the same `claw` binary, and sessions are portable
-between them.
-
-### 1. Web workflow mode
-
-Open the browser, drag nodes from the left sidebar onto the canvas, connect
-them, and click Run. Each node is a claw invocation — configure its prompt,
-model, permission mode, failure policy, and whether it continues the
-upstream node's session. The engine topologically sorts the graph, runs
-nodes in parallel where possible, streams output live, and surfaces cost +
-token counts per node.
-
-Features:
-
-- Five node types plus a Pause node for human approval
-- Conditional edges (`output.includes('ERROR')` gates a branch)
-- Parallel execution by depth group
-- Retry with exponential backoff
-- Run history panel (localStorage, 50 runs)
-- Output drawer with the full stream of the focused node
-- Undo/redo + keyboard shortcuts (`Ctrl+Enter`, `Ctrl+S`, `Ctrl+Z`, `Del`)
-- Save/Load workflows as `.clawtree.json`
-- Per-node permission mode + allowed-tools whitelist
-- Per-node output compression (off / lite / full) to reduce token cost on
-  intermediate nodes — inspired by [Caveman](https://github.com/JuliusBrussee/caveman)
-
-### 2. Chat mode (in-browser)
-
-Click the **Chat** button in the toolbar. A right-side panel opens with a
-normal conversation UI. Messages stream live. Each chat has its own session,
-and the session ID is visible in the header. Cost + tokens shown per
-message.
-
-### 3. Terminal mode (no UI)
-
-For quick one-off agent tasks, run `claw` from a terminal:
+Add `--global` (or `-Global` on Windows) to install `claw` and `claw-tree` on your PATH so you can launch from any directory:
 
 ```bash
-./rust/target/debug/claw                                # interactive REPL
-./rust/target/debug/claw -p "refactor my tests" --print # one-shot
-./rust/target/debug/claw --resume latest                # continue last session
+cd ~/my-project
+claw-tree                   # web UI, workspace = current directory
+claw                        # terminal REPL
 ```
 
-### Cross-mode session continuity
+On first launch, click the **gear icon** and paste your API key. Keys are stored in browser localStorage and never leave your machine.
 
-This is the key thing. Every claw invocation writes its session to
-`.claw/sessions/<id>.jsonl`. Three consequences:
+## Features
 
-1. A chat you start in the **terminal** can be continued from a workflow
-   node: toggle "Continue session" on the node, and it will resume the
-   upstream node's session (or the latest).
-2. A workflow node's session can be continued in the **web chat panel**:
-   new chat messages can reuse a session ID from any prior claw invocation.
-3. A web chat session is visible to the terminal: `claw --resume <id>`
-   picks it up.
-
-One agent, portable memory, three UIs.
+- **9 node types** — Run Agent, Plan, Security, Test, Review, Confirm, Summarize, Custom, Pause
+- **Parallel execution** — nodes at the same depth run concurrently
+- **Conditional edges** — gate branches with JS expressions (`output.includes('ERROR')`)
+- **Session continuity** — nodes can resume upstream sessions for shared memory + cheaper prompt caching
+- **Template interpolation** — `{{Node Label.output}}` and `{{previous.output}}` in prompts
+- **Caveman mode** — per-node output compression to reduce token cost, inspired by [Caveman](https://github.com/JuliusBrussee/caveman)
+- **Multi-provider** — Claude (Anthropic), GPT (OpenAI), GLM (Z.AI) in the same workflow
+- **Cost tracking** — live running total in the toolbar, per-node cost display
+- **Run history** — localStorage-backed, exportable as markdown reports
+- **Dark / light theme** — toggle in the toolbar
+- **Auto-layout** — one-click tree arrangement
+- **Keyboard shortcuts** — `Ctrl+Enter` to run, `Ctrl+S` to save, `?` for full list
+- **Browser notifications** — get notified when a background workflow finishes
+- **Workspace path** — set the working directory for all nodes in settings
 
 ## Architecture
 
@@ -125,90 +73,89 @@ SvelteKit dev server (Node)
   └── /api/health   spawns `claw --version`
                                  │  child_process.spawn
                                  ▼
-claw.exe  (Rust, built from rust/crates/rusty-claude-cli)
+claw binary  (Rust)
   ├── Session state → .claw/sessions/<id>.jsonl
-  └── HTTPS → Anthropic / OpenAI API
+  └── HTTPS → Anthropic / OpenAI / Z.AI
 ```
 
-The whole stack is localhost. Your API key and session data stay on your
-machine. The only outbound call is claw → the LLM provider.
+Everything runs on localhost. The only outbound calls are to the LLM provider APIs.
+
+## The three modes
+
+### Web workflow mode
+
+Drag nodes onto the canvas, connect them, configure prompts per step, and click Run. The engine topologically sorts the graph, runs nodes in parallel where possible, and streams output live.
+
+### Chat mode
+
+Click **Chat** in the toolbar. A side panel opens for direct conversation with the agent. Sessions are shared with workflow nodes.
+
+### Terminal mode
+
+```bash
+claw                                    # interactive REPL
+claw -p "refactor my tests" --print     # one-shot
+claw --resume latest                    # continue last session
+```
+
+### Cross-mode session continuity
+
+Every claw invocation writes to `.claw/sessions/<id>.jsonl`. A terminal chat can be continued in a workflow node. A workflow node's session can be continued in the chat panel. One agent, portable memory.
+
+## Example workflows
+
+Ten example workflows ship in the library sidebar:
+
+| Category | Workflow | Nodes | Description |
+|----------|----------|-------|-------------|
+| Getting Started | Hello World | 1 | Verify your API key works |
+| Code Review | Multi-Agent Review | 6 | Two agents review in parallel, then merge |
+| Code Review | PR Review | 4 | Plan, review, security, verdict |
+| Security & Audit | Full Audit Pipeline | 8 | Triple parallel audit + conditional triage |
+| Security & Audit | Dep Audit | 3 | Inventory, CVE scan, action list |
+| Security & Audit | Plan then Audit | 4 | Plan, audit, summarize, approve |
+| Research | Research & Synthesize | 4 | Three perspectives, one synthesis |
+| Testing | Test Gate | 4 | Test, review, branch on pass/fail |
+| Refactoring | Refactor Plan | 4 | Map, plan, review, approve |
+| Production | Full-Stack Ship | 26 | Complete CI/CD pipeline with 5 parallel tracks |
 
 ## Fork patches
 
-Three patches to `rust/crates/rusty-claude-cli/src/main.rs` vs. upstream
-claw-code:
+Three patches to `rust/crates/rusty-claude-cli/src/main.rs` vs upstream:
 
-1. **`-p` + `--resume` combo** — the one-shot flag originally returned
-   before `--resume` was parsed. We pre-scan the args in the `-p` branch
-   and thread the resume reference into the Prompt dispatch, and added
-   `LiveCli::resumed()` that loads an existing session via the existing
-   `resolve_session_reference` + `Session::load_from_path` helpers.
-2. **Session ID marker** — `eprintln!("[claw-tree-session] {id}")` fires
-   right after the session handle is created, so the web side can capture
-   it from stderr.
-3. **Usage marker** — `eprintln!("[claw-tree-usage] cost_usd=… input=… output=…")`
-   fires at the end of every completion path (text, compact, JSON). Gives
-   cost tracking without requiring JSON output mode.
+1. **`-p` + `--resume` combo** — pre-scan args in the `-p` branch to extract `--resume`
+2. **Session ID marker** — `[claw-tree-session] <id>` on stderr after session creation
+3. **Usage marker** — `[claw-tree-usage] cost_usd=... input_tokens=... output_tokens=...` on stderr
 
-Upstream claw can still be merged in via `git remote add upstream
-https://github.com/ultraworkers/claw-code.git` + `git merge upstream/main`.
+Plus a prompt caching fix in `api/providers/anthropic.rs` and Z.AI provider support in the OpenAI-compat layer.
 
 ## Docker
 
 ```bash
 docker compose up
-# open http://localhost:5173
+# open http://127.0.0.1:5173
 ```
-
-The Dockerfile is multi-stage: Rust release build for `claw`, Node slim
-image for the web runtime. A `./workspace` volume is mounted into the
-container so claw can operate on real files. API keys can be set via the
-`ANTHROPIC_API_KEY` / `OPENAI_API_KEY` environment variables OR pasted
-into the settings page at runtime.
-
-## Example workflows
-
-Three starter workflows live in [`examples/`](./examples). Open the web UI,
-click **Load** in the toolbar, and pick one:
-
-- **`hello-world.clawtree.json`** — a single Custom node that says hi.
-  Use this to verify your API key works end-to-end.
-- **`plan-then-audit.clawtree.json`** — Plan → Security (read-only) →
-  Summarize → Pause. Demonstrates chain-of-thought, session continuity
-  between plan and audit, and human sign-off.
-- **`test-gate.clawtree.json`** — Test → Review → **conditional branch**:
-  if failures, summarize them; if green, confirm with a second model →
-  Pause. Demonstrates conditional edges and parallel-capable fanout.
 
 ## Development
 
 ```bash
-# Web
-cd apps/web
+# Web (from apps/web/)
 npm run dev             # Vite dev server
 npm run check           # Type check
-npm run test:unit       # Vitest unit tests (engine)
+npm run test:unit       # Vitest unit tests
 npm run lint
-npm run format
 
-# Rust
-cd rust
+# Rust (from rust/)
 cargo build -p rusty-claude-cli
-cargo test -p rusty-claude-cli
-cargo fmt
-cargo clippy
+cargo test --workspace
+cargo fmt && cargo clippy
 ```
 
 ## Acknowledgments
 
-- **[claw-code](https://github.com/ultraworkers/claw-code)** — the upstream
-  Rust agent binary that claw-tree forks and extends.
-- **[Caveman](https://github.com/JuliusBrussee/caveman)** — the output
-  compression technique used in claw-tree's per-node compression feature is
-  inspired by Caveman's approach to token reduction via prompt engineering.
+- **[claw-code](https://github.com/ultraworkers/claw-code)** — the upstream Rust agent binary
+- **[Caveman](https://github.com/JuliusBrussee/caveman)** — output compression via prompt engineering
 
 ## License
 
-The Rust portion inherits its license from upstream claw-code — see
-[`UPSTREAM.md`](./UPSTREAM.md) and `rust/` for details. The Svelte UI and
-tooling in this repo are MIT unless noted otherwise.
+The Rust portion inherits its license from upstream claw-code — see [`UPSTREAM.md`](./UPSTREAM.md). The Svelte UI and tooling are MIT unless noted otherwise.

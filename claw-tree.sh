@@ -67,7 +67,7 @@ trap cleanup EXIT INT TERM
 # Wait for dev server to bind
 ready=false
 for i in $(seq 1 20); do
-    if curl -sf "http://localhost:$port" >/dev/null 2>&1; then
+    if curl -sf "http://127.0.0.1:$port" >/dev/null 2>&1; then
         ready=true
         break
     fi
@@ -83,15 +83,15 @@ fi
 if ! $no_browser; then
     step "Opening browser"
     if command -v open >/dev/null 2>&1; then
-        open "http://localhost:$port"
+        open "http://127.0.0.1:$port"
     elif command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "http://localhost:$port"
+        xdg-open "http://127.0.0.1:$port"
     fi
 fi
 
 echo
 printf "\033[0;32mclaw-tree is running.\033[0m\n"
-echo "  Web: http://localhost:$port"
+echo "  Web: http://127.0.0.1:$port"
 echo "  Stop: Ctrl+C"
 echo
 

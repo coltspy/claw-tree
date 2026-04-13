@@ -100,7 +100,7 @@ if ($Global) {
 } else {
     Write-Host "  1. cd apps\web"
     Write-Host "  2. npm run dev"
-    Write-Host "  3. Open http://localhost:5173"
+    Write-Host "  3. Open http://127.0.0.1:5173"
     Write-Host "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
     Write-Host ""
     Write-Host "Tip: rerun with -Global to install 'claw' and 'claw-tree' on your PATH" -ForegroundColor Gray

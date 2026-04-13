@@ -1,4 +1,4 @@
-# claw-tree — one-command launcher (Windows PowerShell)
+# claw-tree -- one-command launcher (Windows PowerShell)
 # Starts the SvelteKit dev server, optionally opens the browser,
 # and optionally drops into a terminal claw REPL alongside.
 
@@ -23,7 +23,7 @@ if (-not (Test-Path $webDir)) {
     exit 1
 }
 if (-not (Test-Path $clawBin)) {
-    Write-Warn "claw binary not found at $clawBin — running setup first"
+    Write-Warn "claw binary not found at $clawBin -- running setup first"
     & (Join-Path $repoRoot 'setup.ps1')
 }
 
@@ -50,7 +50,7 @@ $maxTries = 20
 $ready = $false
 for ($i = 0; $i -lt $maxTries; $i++) {
     try {
-        $test = Invoke-WebRequest -Uri "http://localhost:$Port" -TimeoutSec 1 -UseBasicParsing
+        $test = Invoke-WebRequest -Uri "http://127.0.0.1:$Port" -TimeoutSec 1 -UseBasicParsing
         if ($test.StatusCode -eq 200) {
             $ready = $true
             break
@@ -68,12 +68,12 @@ if ($ready) {
 
 if (-not $NoBrowser) {
     Write-Step "Opening browser"
-    Start-Process "http://localhost:$Port"
+    Start-Process "http://127.0.0.1:$Port"
 }
 
 Write-Host ""
 Write-Host "claw-tree is running." -ForegroundColor Green
-Write-Host "  Web: http://localhost:$Port"
+Write-Host "  Web: http://127.0.0.1:$Port"
 Write-Host "  Stop: Stop-Job $($serverJob.Id); Remove-Job $($serverJob.Id)"
 Write-Host ""
 

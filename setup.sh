@@ -84,7 +84,7 @@ if $install_global; then
 else
     echo "  1. cd apps/web"
     echo "  2. npm run dev"
-    echo "  3. Open http://localhost:5173"
+    echo "  3. Open http://127.0.0.1:5173"
     echo "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
     echo
     echo "Tip: rerun with --global to install 'claw' and 'claw-tree' on your PATH"
