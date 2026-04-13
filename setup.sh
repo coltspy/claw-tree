@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # claw-tree setup script (macOS / Linux)
-# Builds the claw Rust CLI and installs web dependencies.
+# Builds the claw Rust CLI, installs web dependencies, and puts
+# `claw` + `claw-tree` on your PATH.
 #
 # Usage:
-#   ./setup.sh              # normal setup (debug build + npm install)
-#   ./setup.sh --global     # same, plus `cargo install --path` so `claw` is on PATH
+#   ./setup.sh              # full setup (release build + global install)
+#   ./setup.sh --no-global  # skip global install (debug build only)
 
 set -euo pipefail
 
-install_global=false
+install_global=true
 for arg in "$@"; do
     case "$arg" in
-        --global) install_global=true ;;
+        --no-global) install_global=false ;;
     esac
 done
 
@@ -63,11 +64,11 @@ if $install_global; then
     step "Installing claw-tree launcher to ~/.cargo/bin"
     cat > "$HOME/.cargo/bin/claw-tree" <<LAUNCHER
 #!/usr/bin/env bash
-# claw-tree global launcher — starts the web UI with cwd as workspace
+# claw-tree global launcher -- starts the web UI with cwd as workspace
 exec "$repo_root/claw-tree.sh" "\$@"
 LAUNCHER
     chmod +x "$HOME/.cargo/bin/claw-tree"
-    ok "claw-tree installed — run 'claw-tree' from any directory"
+    ok "claw-tree installed -- run 'claw-tree' from any directory"
 fi
 
 echo
@@ -79,15 +80,13 @@ if $install_global; then
     echo "  2. Run: claw-tree"
     echo "  3. Paste your Anthropic API key in the gear icon"
     echo
-    echo "  claw-tree starts the web UI with the current directory as the workspace."
-    echo "  claw starts the terminal REPL (also works from any directory)."
+    echo "  claw-tree  starts the web UI with the current directory as workspace"
+    echo "  claw       starts the terminal REPL (also from any directory)"
 else
-    echo "  1. cd apps/web"
-    echo "  2. npm run dev"
-    echo "  3. Open http://127.0.0.1:5173"
-    echo "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
+    echo "  1. Run: ./claw-tree.sh"
+    echo "  2. Paste your Anthropic API key in the gear icon"
     echo
-    echo "Tip: rerun with --global to install 'claw' and 'claw-tree' on your PATH"
-    echo "     so you can launch from any directory."
+    echo "Tip: run setup again without --no-global to install 'claw' and"
+    echo "     'claw-tree' on your PATH."
 fi
 echo

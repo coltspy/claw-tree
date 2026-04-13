@@ -22,25 +22,26 @@ One agent, three interfaces: **web canvas**, **in-browser chat**, and **terminal
 Prerequisites: **Node.js 20+**, **Rust 1.80+**, and **git**.
 
 ```bash
-# Setup (builds the Rust binary + installs web deps)
+# Setup (builds Rust binary, installs web deps, puts claw + claw-tree on PATH)
 ./setup.sh                  # macOS / Linux
 .\setup.ps1                 # Windows PowerShell
 
-# Launch
-./claw-tree.sh              # macOS / Linux
-.\claw-tree.ps1             # Windows
-# Opens http://127.0.0.1:5173
-```
-
-Add `--global` (or `-Global` on Windows) to install `claw` and `claw-tree` on your PATH so you can launch from any directory:
-
-```bash
+# Launch from any project directory
 cd ~/my-project
 claw-tree                   # web UI, workspace = current directory
 claw                        # terminal REPL
 ```
 
+Pass `--no-global` (or `-NoGlobal` on Windows) to skip the global install if you only want the debug build.
+
 On first launch, click the **gear icon** and paste your API key. Keys are stored in browser localStorage and never leave your machine.
+
+## Docker
+
+```bash
+docker compose up
+# open http://127.0.0.1:5173
+```
 
 ## Features
 
@@ -58,27 +59,6 @@ On first launch, click the **gear icon** and paste your API key. Keys are stored
 - **Keyboard shortcuts** — `Ctrl+Enter` to run, `Ctrl+S` to save, `?` for full list
 - **Browser notifications** — get notified when a background workflow finishes
 - **Workspace path** — set the working directory for all nodes in settings
-
-## Architecture
-
-```
-Browser
-  ├── Canvas (Svelte Flow) ──────┐
-  ├── Chat panel ────────────────┤
-  └── Settings / runs / history ─┤
-                                 │  HTTP (fetch, streamed body)
-                                 ▼
-SvelteKit dev server (Node)
-  ├── /api/run      spawns `claw -p <prompt> [--resume <id>]`
-  └── /api/health   spawns `claw --version`
-                                 │  child_process.spawn
-                                 ▼
-claw binary  (Rust)
-  ├── Session state → .claw/sessions/<id>.jsonl
-  └── HTTPS → Anthropic / OpenAI / Z.AI
-```
-
-Everything runs on localhost. The only outbound calls are to the LLM provider APIs.
 
 ## The three modes
 
@@ -102,23 +82,6 @@ claw --resume latest                    # continue last session
 
 Every claw invocation writes to `.claw/sessions/<id>.jsonl`. A terminal chat can be continued in a workflow node. A workflow node's session can be continued in the chat panel. One agent, portable memory.
 
-## Example workflows
-
-Ten example workflows ship in the library sidebar:
-
-| Category | Workflow | Nodes | Description |
-|----------|----------|-------|-------------|
-| Getting Started | Hello World | 1 | Verify your API key works |
-| Code Review | Multi-Agent Review | 6 | Two agents review in parallel, then merge |
-| Code Review | PR Review | 4 | Plan, review, security, verdict |
-| Security & Audit | Full Audit Pipeline | 8 | Triple parallel audit + conditional triage |
-| Security & Audit | Dep Audit | 3 | Inventory, CVE scan, action list |
-| Security & Audit | Plan then Audit | 4 | Plan, audit, summarize, approve |
-| Research | Research & Synthesize | 4 | Three perspectives, one synthesis |
-| Testing | Test Gate | 4 | Test, review, branch on pass/fail |
-| Refactoring | Refactor Plan | 4 | Map, plan, review, approve |
-| Production | Full-Stack Ship | 26 | Complete CI/CD pipeline with 5 parallel tracks |
-
 ## Fork patches
 
 Three patches to `rust/crates/rusty-claude-cli/src/main.rs` vs upstream:
@@ -128,13 +91,6 @@ Three patches to `rust/crates/rusty-claude-cli/src/main.rs` vs upstream:
 3. **Usage marker** — `[claw-tree-usage] cost_usd=... input_tokens=... output_tokens=...` on stderr
 
 Plus a prompt caching fix in `api/providers/anthropic.rs` and Z.AI provider support in the OpenAI-compat layer.
-
-## Docker
-
-```bash
-docker compose up
-# open http://127.0.0.1:5173
-```
 
 ## Development
 
