@@ -46,14 +46,14 @@
 	}
 </script>
 
-<aside class="flex w-56 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900">
-	<div class="flex h-10 items-center justify-between border-b border-zinc-800 px-3">
-		<h2 class="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Run history</h2>
+<aside class="flex w-56 shrink-0 flex-col border-r border-border bg-surface-raised">
+	<div class="flex h-10 items-center justify-between border-b border-border px-3">
+		<h2 class="text-[11px] font-semibold tracking-widest text-fg-3 uppercase">Run history</h2>
 		<button
 			type="button"
 			onclick={clearAllRuns}
 			disabled={runs.list.length === 0}
-			class="rounded px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
+			class="rounded px-1.5 py-0.5 text-[11px] text-fg-3 hover:bg-surface-overlay hover:text-fg-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-3"
 		>
 			Clear all
 		</button>
@@ -61,7 +61,7 @@
 
 	<div class="flex flex-1 flex-col overflow-y-auto">
 		{#if sortedRuns.length === 0}
-			<div class="px-3 py-4 text-[11px] italic text-zinc-600">No runs yet</div>
+			<div class="px-3 py-4 text-[11px] italic text-fg-muted">No runs yet</div>
 		{:else}
 			{#each sortedRuns as run (run.id)}
 				{@const isViewing = runs.viewingRunId === run.id}
@@ -73,22 +73,22 @@
 					onclick={() => viewRun(run.id)}
 					onkeydown={(e) => handleRowKeydown(e, run.id)}
 					class="group flex w-full cursor-pointer flex-col gap-1 px-3 py-2 text-left {isViewing
-						? 'border-l-2 border-emerald-500 bg-zinc-800'
-						: 'border-l-2 border-transparent hover:bg-zinc-800/60'}"
+						? 'border-l-2 border-accent bg-surface-overlay'
+						: 'border-l-2 border-transparent hover:bg-surface-overlay'}"
 				>
 					<div class="flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<span class="h-2 w-2 rounded-full {statusDotClass[run.status]}"></span>
-							<span class="font-mono text-[10px] text-zinc-600">{run.id.slice(0, 6)}</span>
+							<span class="text-[11px] text-fg-3">{relativeTime(run.startedAt)}</span>
 						</div>
 						<div class="flex items-center gap-1">
-							<span class="text-[10px] text-zinc-500">{relativeTime(run.startedAt)}</span>
+							<span class="font-mono text-[11px] text-fg-muted">{run.id.slice(0, 6)}</span>
 							<button
 								type="button"
 								aria-label="Fork this run"
 								title="Fork — restore this run's workflow onto the canvas"
 								onclick={(e) => handleFork(e, run.id)}
-								class="ml-1 rounded p-0.5 text-zinc-500 opacity-0 hover:bg-zinc-700 hover:text-indigo-400 group-hover:opacity-100"
+								class="ml-1 rounded p-0.5 text-fg-3 opacity-0 hover:bg-surface-overlay hover:text-fg group-hover:opacity-100"
 							>
 								<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
 									<circle cx="4" cy="3" r="1.5" />
@@ -102,7 +102,7 @@
 								type="button"
 								aria-label="Delete run"
 								onclick={(e) => handleDelete(e, run.id)}
-								class="rounded p-0.5 text-zinc-500 opacity-0 hover:bg-zinc-700 hover:text-zinc-200 group-hover:opacity-100"
+								class="rounded p-0.5 text-fg-3 opacity-0 hover:bg-surface-overlay hover:text-fg group-hover:opacity-100"
 							>
 								<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
 									<path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
@@ -110,7 +110,7 @@
 							</button>
 						</div>
 					</div>
-					<div class="flex items-center justify-between text-[10px] text-zinc-500">
+					<div class="flex items-center justify-between text-[11px] text-fg-3">
 						<span>{nodeCount} nodes</span>
 						{#if duration}
 							<span class="font-mono">{duration}</span>

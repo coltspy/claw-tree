@@ -59,19 +59,35 @@ if $install_global; then
     echo "    Release build, takes a few minutes first time."
     (cd "$repo_root/rust/crates/rusty-claude-cli" && cargo install --path . --locked)
     ok "claw installed to ~/.cargo/bin/claw (on PATH)"
+
+    step "Installing claw-tree launcher to ~/.cargo/bin"
+    cat > "$HOME/.cargo/bin/claw-tree" <<LAUNCHER
+#!/usr/bin/env bash
+# claw-tree global launcher — starts the web UI with cwd as workspace
+exec "$repo_root/claw-tree.sh" "\$@"
+LAUNCHER
+    chmod +x "$HOME/.cargo/bin/claw-tree"
+    ok "claw-tree installed — run 'claw-tree' from any directory"
 fi
 
 echo
 printf "\033[0;32mSetup complete.\033[0m\n"
 echo
 printf "\033[0;36mNext steps:\033[0m\n"
-echo "  1. cd apps/web"
-echo "  2. npm run dev"
-echo "  3. Open http://localhost:5173"
-echo "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
-if ! $install_global; then
+if $install_global; then
+    echo "  1. cd into any project directory"
+    echo "  2. Run: claw-tree"
+    echo "  3. Paste your Anthropic API key in the gear icon"
     echo
-    echo "Tip: rerun with --global to install the 'claw' command globally"
-    echo "     so you can use terminal mode without the full path."
+    echo "  claw-tree starts the web UI with the current directory as the workspace."
+    echo "  claw starts the terminal REPL (also works from any directory)."
+else
+    echo "  1. cd apps/web"
+    echo "  2. npm run dev"
+    echo "  3. Open http://localhost:5173"
+    echo "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
+    echo
+    echo "Tip: rerun with --global to install 'claw' and 'claw-tree' on your PATH"
+    echo "     so you can launch from any directory."
 fi
 echo

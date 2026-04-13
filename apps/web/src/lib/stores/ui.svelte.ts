@@ -1,11 +1,15 @@
 const STORAGE_KEY = 'claw-tree:ui';
 
+type Theme = 'dark' | 'light';
+
 interface UiState {
 	chatOpen: boolean;
+	theme: Theme;
 }
 
 const DEFAULTS: UiState = {
-	chatOpen: false
+	chatOpen: false,
+	theme: 'dark'
 };
 
 function load(): UiState {
@@ -30,6 +34,13 @@ function persist() {
 	}
 }
 
+function applyTheme(theme: Theme) {
+	if (typeof document === 'undefined') return;
+	document.documentElement.setAttribute('data-theme', theme);
+}
+
+applyTheme(ui.theme);
+
 export function toggleChat() {
 	ui.chatOpen = !ui.chatOpen;
 	persist();
@@ -37,5 +48,17 @@ export function toggleChat() {
 
 export function setChatOpen(open: boolean) {
 	ui.chatOpen = open;
+	persist();
+}
+
+export function toggleTheme() {
+	ui.theme = ui.theme === 'dark' ? 'light' : 'dark';
+	applyTheme(ui.theme);
+	persist();
+}
+
+export function setTheme(theme: Theme) {
+	ui.theme = theme;
+	applyTheme(ui.theme);
 	persist();
 }

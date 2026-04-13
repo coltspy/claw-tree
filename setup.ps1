@@ -78,19 +78,32 @@ if ($Global) {
         Pop-Location
     }
     Write-Ok "claw installed to ~\.cargo\bin\claw.exe (on PATH)"
+
+    Write-Step "Installing claw-tree launcher"
+    $launcherPath = Join-Path $HOME '.cargo\bin\claw-tree.cmd'
+    $launcherPs1 = Join-Path $repoRoot 'claw-tree.ps1'
+    Set-Content -Path $launcherPath -Value "@echo off`npowershell -NoProfile -ExecutionPolicy Bypass -File `"$launcherPs1`" %*"
+    Write-Ok "claw-tree.cmd installed to ~\.cargo\bin (on PATH)"
 }
 
 Write-Host ""
 Write-Host "Setup complete." -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. cd apps\web"
-Write-Host "  2. npm run dev"
-Write-Host "  3. Open http://localhost:5173"
-Write-Host "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
-if (-not $Global) {
+if ($Global) {
+    Write-Host "  1. cd into any project directory"
+    Write-Host "  2. Run: claw-tree"
+    Write-Host "  3. Paste your Anthropic API key in the gear icon"
     Write-Host ""
-    Write-Host "Tip: rerun with -Global to install the 'claw' command globally" -ForegroundColor Gray
-    Write-Host "     so you can use terminal mode without the full path." -ForegroundColor Gray
+    Write-Host "  claw-tree starts the web UI with the current directory as the workspace."
+    Write-Host "  claw starts the terminal REPL (also works from any directory)."
+} else {
+    Write-Host "  1. cd apps\web"
+    Write-Host "  2. npm run dev"
+    Write-Host "  3. Open http://localhost:5173"
+    Write-Host "  4. Click the gear icon in the toolbar and paste your Anthropic API key"
+    Write-Host ""
+    Write-Host "Tip: rerun with -Global to install 'claw' and 'claw-tree' on your PATH" -ForegroundColor Gray
+    Write-Host "     so you can launch from any directory." -ForegroundColor Gray
 }
 Write-Host ""

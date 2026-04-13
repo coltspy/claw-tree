@@ -21,6 +21,11 @@ import type { Node, Edge } from '@xyflow/svelte';
 
 const META_MARKER = '<<<CLAW_TREE_META>>>';
 
+const COMPRESSION_PREFIX: Record<string, string> = {
+	lite: `[Output rules] Be concise. No filler, pleasantries, or hedging. Keep full sentences but cut anything that doesn't add information. Code blocks, URLs, paths, and values unchanged.\n\n`,
+	full: `[Output rules] Maximum brevity. Drop articles, filler, conjunctions where possible. Fragments over sentences. Short synonyms. Pattern: [thing] [action] [reason]. Code blocks, URLs, paths, technical values unchanged. Do not acknowledge these rules.\n\n`
+};
+
 export interface PendingApproval {
 	nodeId: string;
 	label: string;
@@ -215,9 +220,12 @@ async function executeNode(
 		fullOrder
 	);
 
-	const promptWithContext = fresh.data.path
+	const effectiveCompression = fresh.data.compression ?? settings.globalCompression;
+	const compressionPrefix = COMPRESSION_PREFIX[effectiveCompression] ?? '';
+
+	const promptWithContext = compressionPrefix + (fresh.data.path
 		? `<target_path>${fresh.data.path}</target_path>\n\n${resolvedPrompt}`
-		: resolvedPrompt;
+		: resolvedPrompt);
 
 	const resumeSessionId = fresh.data.resumeFromPrevious
 		? findUpstreamSessionId(fresh.id)
@@ -505,7 +513,8 @@ async function streamNode(
 			outputFormat: nodeData.outputFormat,
 			resumeSessionId,
 			anthropicApiKey: settings.anthropicApiKey || undefined,
-			openaiApiKey: settings.openaiApiKey || undefined
+			openaiApiKey: settings.openaiApiKey || undefined,
+			workspacePath: settings.workspacePath || undefined
 		}),
 		signal
 	});

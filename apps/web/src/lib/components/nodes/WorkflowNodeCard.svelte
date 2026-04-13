@@ -79,69 +79,68 @@
 	});
 
 	function handleErrorAction(action: ErrorAction, _node: NodeData): void {
-		// TODO: wire actual handlers (open settings modal, focus node panel field, etc.)
 		console.log('node error action', action, _node.label);
 	}
 </script>
 
 <div
-	class="group relative w-60 rounded-lg border bg-zinc-900 shadow-lg transition-all {selected
-		? 'border-emerald-500 shadow-emerald-900/40'
-		: `border-zinc-800 ${style.ring}`}"
+	class="group relative w-60 rounded-lg border bg-surface-raised shadow-lg transition-all {selected
+		? 'border-accent shadow-emerald-900/40'
+		: `border-border ${style.ring}`}"
 >
 	<Handle
 		type="target"
 		position={Position.Top}
-		class="!h-2 !w-2 !border-zinc-600 !bg-zinc-800"
+		class="!h-2 !w-2 !border-border !bg-surface-overlay"
 	/>
 
-	<div class="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
+	<div class="flex items-center justify-between border-b border-border px-3 py-2">
 		<span
-			class="rounded border px-1.5 py-0.5 text-[9px] font-semibold tracking-widest {style.accent}"
+			class="rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-widest {style.accent}"
 		>
 			{style.label}
 		</span>
 		<div class="flex items-center gap-1.5">
 			{#if node.failurePolicy !== 'halt'}
-				<span class="text-[9px] text-zinc-500 uppercase">{node.failurePolicy}</span>
+				<span class="text-[10px] text-fg-muted uppercase">{node.failurePolicy}</span>
 			{/if}
 			<span class="h-2 w-2 rounded-full {dot}" title={node.status}></span>
 		</div>
 	</div>
 
 	<div class="px-3 py-2">
-		<h3 class="truncate text-sm font-semibold text-zinc-100">{node.label}</h3>
+		<h3 class="truncate text-sm font-semibold text-fg">{node.label}</h3>
 		<p
-			class="mt-1 line-clamp-2 text-[11px] leading-snug text-zinc-500"
+			class="mt-1 line-clamp-2 text-[11px] leading-snug text-fg-3"
 			class:italic={!node.prompt.trim()}
 		>
 			{promptPreview}
 		</p>
 	</div>
 
-	<div class="flex items-center justify-between border-t border-zinc-800/70 px-3 py-1.5">
-		<span class="truncate font-mono text-[10px] text-zinc-600">{node.model}</span>
+	<div class="flex items-center justify-between border-t border-border-subtle px-3 py-1.5">
+		<span class="max-w-[7rem] truncate font-mono text-[11px] text-fg-muted">{node.model}</span>
 		<div class="flex items-center gap-2">
 			{#if node.fromCache}
 				<span
-					class="rounded border border-cyan-900/60 bg-cyan-500/10 px-1.5 text-[9px] font-medium text-cyan-300"
+					class="rounded border border-accent/30 bg-accent-dim px-1.5 text-[10px] font-medium text-accent"
 					title="Result reused from local cache"
 				>
 					cached
 				</span>
 			{/if}
 			{#if node.costUsd !== undefined}
-				<span class="font-mono text-[10px] text-emerald-500/80">{formatCost(node.costUsd)}</span>
+				<span class="font-mono text-[10px] text-accent/60">{formatCost(node.costUsd)}</span>
 			{/if}
 			{#if node.path}
-				<span class="truncate font-mono text-[10px] text-zinc-600">{node.path}</span>
+				<span class="truncate font-mono text-[10px] text-fg-muted">{node.path}</span>
 			{/if}
 		</div>
 	</div>
 
 	{#if outputPreview}
 		<div
-			class="max-h-20 overflow-hidden border-t border-emerald-900/40 bg-emerald-950/20 px-3 py-1.5"
+			class="max-h-20 overflow-hidden border-t border-accent/20 bg-accent-dim px-3 py-1.5"
 		>
 			<pre
 				class="line-clamp-3 font-mono text-[10px] leading-snug whitespace-pre-wrap text-emerald-200/80">{outputPreview}</pre>
@@ -166,6 +165,6 @@
 	<Handle
 		type="source"
 		position={Position.Bottom}
-		class="!h-2 !w-2 !border-zinc-600 !bg-zinc-800"
+		class="!h-2 !w-2 !border-border !bg-surface-overlay"
 	/>
 </div>

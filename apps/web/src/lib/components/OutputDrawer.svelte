@@ -38,29 +38,29 @@
 
 {#if !focusedNode}
 	<div
-		class="flex h-8 w-full shrink-0 items-center border-t border-zinc-800 bg-zinc-950 px-3 text-[11px] text-zinc-600 italic"
+		class="flex h-8 w-full shrink-0 items-center border-t border-border bg-surface px-3 text-[11px] text-fg-muted italic"
 	>
 		No output — run a workflow to see output here
 	</div>
 {:else}
 	{@const node = focusedNode}
 	<section
-		class="flex w-full shrink-0 flex-col border-t border-zinc-800 bg-zinc-950"
+		class="flex w-full shrink-0 flex-col border-t border-border bg-surface"
 		style:height={collapsed ? '32px' : '240px'}
 	>
-		<header class="flex h-8 shrink-0 items-center justify-between border-b border-zinc-800 px-3">
+		<header class="flex h-8 shrink-0 items-center justify-between border-b border-border bg-surface-raised px-3">
 			<div class="flex min-w-0 items-center gap-2">
-				<span class="truncate text-[11px] font-medium text-zinc-300">{node.data.label}</span>
+				<span class="truncate text-[11px] font-medium text-fg">{node.data.label}</span>
 			</div>
 			<span
-				class="rounded px-2 py-0.5 text-[10px] font-medium capitalize {statusColors[node.data.status] ?? 'bg-zinc-800 text-zinc-400'}"
+				class="rounded px-2 py-0.5 text-[10px] font-medium capitalize {statusColors[node.data.status] ?? 'bg-surface-overlay text-fg-3'}"
 			>
 				{node.data.status}
 			</span>
 			<button
 				type="button"
 				onclick={() => (collapsed = !collapsed)}
-				class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+				class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg-2"
 				aria-label={collapsed ? 'Expand output drawer' : 'Collapse output drawer'}
 			>
 				<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -76,8 +76,8 @@
 		{#if !collapsed}
 			<pre
 				bind:this={scrollEl}
-				class="flex-1 overflow-auto whitespace-pre-wrap p-3 font-mono text-[11px] leading-relaxed text-zinc-300"
-			>{#if error}<span class="mb-3 block rounded border border-red-900/50 bg-red-950/20 p-2 text-red-300">{error}</span>{/if}{#if output}{output}{:else}<span class="text-zinc-600 italic">(no output yet)</span>{/if}</pre>
+				class="flex-1 overflow-auto whitespace-pre-wrap p-3 font-mono text-[11px] leading-relaxed text-fg-2"
+			>{#if error}<span class="mb-3 block rounded border border-red-900/50 bg-red-950/20 p-2 text-red-300">{error}</span>{/if}{#if output}{output}{:else}<span class="text-fg-muted italic">(no output yet)</span>{/if}</pre>
 		{/if}
 	</section>
 {/if}

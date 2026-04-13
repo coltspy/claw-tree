@@ -77,6 +77,8 @@ Features:
 - Undo/redo + keyboard shortcuts (`Ctrl+Enter`, `Ctrl+S`, `Ctrl+Z`, `Del`)
 - Save/Load workflows as `.clawtree.json`
 - Per-node permission mode + allowed-tools whitelist
+- Per-node output compression (off / lite / full) to reduce token cost on
+  intermediate nodes — inspired by [Caveman](https://github.com/JuliusBrussee/caveman)
 
 ### 2. Chat mode (in-browser)
 
@@ -197,6 +199,14 @@ cargo test -p rusty-claude-cli
 cargo fmt
 cargo clippy
 ```
+
+## Acknowledgments
+
+- **[claw-code](https://github.com/ultraworkers/claw-code)** — the upstream
+  Rust agent binary that claw-tree forks and extends.
+- **[Caveman](https://github.com/JuliusBrussee/caveman)** — the output
+  compression technique used in claw-tree's per-node compression feature is
+  inspired by Caveman's approach to token reduction via prompt engineering.
 
 ## License
 

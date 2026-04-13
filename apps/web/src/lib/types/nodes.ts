@@ -10,6 +10,8 @@ export type NodeType =
 
 export type OutputFormat = 'text' | 'json';
 
+export type Compression = 'off' | 'lite' | 'full';
+
 export type NodeStatus =
 	| 'idle'
 	| 'queued'

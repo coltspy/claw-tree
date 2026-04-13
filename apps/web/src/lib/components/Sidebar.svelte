@@ -78,21 +78,21 @@
 </script>
 
 <aside
-	class="flex w-64 shrink-0 flex-col border-r border-zinc-800/80 bg-zinc-950/40 backdrop-blur-sm"
+	class="flex w-64 shrink-0 flex-col border-r border-border bg-surface-raised"
 >
 	<div class="px-5 pt-5 pb-3">
-		<h2 class="text-[11px] font-medium tracking-wide text-zinc-400">Nodes</h2>
-		<p class="mt-0.5 text-[10px] text-zinc-600">Drag onto canvas or click to add</p>
+		<h2 class="text-xs font-medium tracking-wide text-fg-3">Nodes</h2>
+		<p class="mt-0.5 text-[11px] text-fg-muted">Drag onto canvas or click to add</p>
 	</div>
 
-	<div class="flex flex-col gap-0.5 px-3 pb-3">
+	<div class="flex flex-col gap-0.5 px-4 pb-3">
 		{#each nodeOptions as option (option.type)}
 			<button
 				type="button"
 				draggable="true"
 				ondragstart={(e) => handleDragStart(e, option.type)}
 				onclick={() => addNode(option.type)}
-				class="group flex cursor-grab items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 text-left transition-all hover:border-zinc-800 hover:bg-zinc-900/80 active:cursor-grabbing active:bg-zinc-800/80"
+				class="group flex cursor-grab items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-overlay active:cursor-grabbing active:bg-surface-overlay"
 			>
 				<div
 					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md ring-1 {option.accent}"
@@ -110,8 +110,8 @@
 					</svg>
 				</div>
 				<div class="min-w-0 flex-1">
-					<div class="truncate text-[13px] font-medium text-zinc-100">{option.label}</div>
-					<div class="truncate text-[11px] text-zinc-500 group-hover:text-zinc-400">
+					<div class="truncate text-[13px] font-medium text-fg">{option.label}</div>
+					<div class="truncate text-[11px] text-fg-3 group-hover:text-fg-2">
 						{option.description}
 					</div>
 				</div>
@@ -119,8 +119,8 @@
 		{/each}
 	</div>
 
-	<div class="mt-auto border-t border-zinc-800/60 px-5 py-3">
-		<p class="text-[10px] leading-relaxed text-zinc-600">
+	<div class="mt-auto border-t border-border-subtle px-5 py-3">
+		<p class="text-[11px] leading-relaxed text-fg-muted">
 			Drag between handles to connect nodes. Drop off a handle onto empty canvas to spawn a
 			connected node.
 		</p>

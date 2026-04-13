@@ -13,10 +13,12 @@
 		CLAW_TOOLS_DANGER,
 		type ClawPermissionMode,
 		type ClawTool,
+		type Compression,
 		type FailurePolicy,
 		type OutputFormat
 	} from '$lib/types/nodes';
 	import { isConditionValid } from '$lib/engine/conditions';
+	import { settings } from '$lib/stores/settings.svelte';
 
 	const selectedNode = $derived.by(() => {
 		const selected = workflow.nodes.filter((n) => n.selected);
@@ -39,6 +41,12 @@
 
 	const failurePolicies: FailurePolicy[] = ['halt', 'skip', 'retry'];
 	const outputFormats: OutputFormat[] = ['text', 'json'];
+	const compressionLevels: { value: Compression | 'global'; label: string }[] = [
+		{ value: 'global', label: 'Global' },
+		{ value: 'off', label: 'Off' },
+		{ value: 'lite', label: 'Lite' },
+		{ value: 'full', label: 'Full' }
+	];
 
 	const permissionModeLabels: Record<ClawPermissionMode, string> = {
 		'read-only': 'Read only',
@@ -64,9 +72,17 @@
 
 	const selectedTools = $derived(new Set(selectedNode?.data.allowedTools ?? []));
 	const isPauseNode = $derived(selectedNode?.data.nodeType === 'pause');
-	const hasIncomingEdge = $derived.by(() => {
-		if (!selectedNode) return false;
-		return workflow.edges.some((e) => e.target === selectedNode.id);
+
+	const incomingEdgeCount = $derived.by(() => {
+		if (!selectedNode) return 0;
+		return workflow.edges.filter((e) => e.target === selectedNode.id).length;
+	});
+	const canResume = $derived(incomingEdgeCount === 1);
+
+	$effect(() => {
+		if (selectedNode && selectedNode.data.resumeFromPrevious && incomingEdgeCount >= 2) {
+			updateNodeData(selectedNode.id, { resumeFromPrevious: false });
+		}
 	});
 
 	function toggleTool(tool: ClawTool) {
@@ -127,21 +143,21 @@
 
 {#if selectedNode}
 	{@const node = selectedNode}
-	<aside class="flex w-80 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
-		<div class="flex items-start justify-between border-b border-zinc-800 px-4 py-3">
+	<aside class="flex w-80 shrink-0 flex-col border-l border-border bg-surface-raised">
+		<div class="flex items-start justify-between border-b border-border px-4 py-3">
 			<div>
 				<div class="flex items-center gap-2">
 					<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-					<h2 class="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">
+					<h2 class="text-[10px] font-semibold tracking-widest text-fg-3 uppercase">
 						{node.data.nodeType}
 					</h2>
 				</div>
-				<p class="mt-1 text-xs text-zinc-400">Node configuration</p>
+				<p class="mt-1 text-xs text-fg-3">Node configuration</p>
 			</div>
 			<button
 				type="button"
 				onclick={deselectAll}
-				class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+				class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg-2"
 				aria-label="Close panel"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -152,7 +168,7 @@
 
 		<div class="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
 			<div>
-				<label for="node-label" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+				<label for="node-label" class="mb-1.5 block text-[11px] font-medium text-fg-2">
 					Label
 				</label>
 				<input
@@ -160,17 +176,17 @@
 					type="text"
 					value={node.data.label}
 					oninput={(e) => updateNodeData(node.id, { label: e.currentTarget.value })}
-					class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+					class="w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
 				/>
 			</div>
 
 			<div>
 				<div class="mb-1.5 flex items-center justify-between">
-					<label for="node-prompt" class="block text-[11px] font-medium text-zinc-400">
+					<label for="node-prompt" class="block text-[11px] font-medium text-fg-2">
 						{isPauseNode ? 'Approval message' : 'Prompt'}
 					</label>
 					{#if !isPauseNode}
-						<span class="font-mono text-[10px] text-zinc-600">{'{{nodeId.output}}'}</span>
+						<span class="font-mono text-[10px] text-fg-muted">{'{{nodeId.output}}'}</span>
 					{/if}
 				</div>
 				<textarea
@@ -178,42 +194,44 @@
 					rows="6"
 					value={node.data.prompt}
 					oninput={(e) => updateNodeData(node.id, { prompt: e.currentTarget.value })}
-					class="w-full resize-y rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs leading-relaxed text-zinc-100 focus:border-emerald-500 focus:outline-none"
+					class="w-full resize-y rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs leading-relaxed text-fg focus:border-accent focus:outline-none"
 				></textarea>
 			</div>
 
 			{#if !isPauseNode}
 				<div>
 					<div class="flex items-center justify-between">
-						<span class="text-[11px] font-medium text-zinc-400">Continue session</span>
+						<span class="text-[11px] font-medium text-fg-2">Continue session</span>
 						<button
 							type="button"
 							role="switch"
 							aria-label="Continue session from upstream node"
 							aria-checked={Boolean(node.data.resumeFromPrevious)}
-							disabled={!hasIncomingEdge}
+							disabled={!canResume}
 							onclick={() =>
 								updateNodeData(node.id, {
 									resumeFromPrevious: !node.data.resumeFromPrevious
 								})}
 							class="relative h-4 w-7 rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-40 {node
 								.data.resumeFromPrevious
-								? 'border-emerald-600 bg-emerald-600/40'
-								: 'border-zinc-700 bg-zinc-800'}"
+								? 'border-accent bg-accent/40'
+								: 'border-border bg-surface-overlay'}"
 						>
 							<span
 								class="absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all {node.data
 									.resumeFromPrevious
-									? 'left-3.5 bg-emerald-300'
-									: 'left-0.5 bg-zinc-500'}"
+									? 'left-3.5 bg-accent'
+									: 'left-0.5 bg-fg-muted'}"
 							></span>
 						</button>
 					</div>
-					<p class="mt-1 text-[10px] text-zinc-600">
-						{#if !hasIncomingEdge}
+					<p class="mt-1 text-[11px] text-fg-muted">
+						{#if incomingEdgeCount === 0}
 							connect an upstream node to enable
+						{:else if incomingEdgeCount >= 2}
+							disabled — multiple upstream connections (use templates instead)
 						{:else if node.data.resumeFromPrevious}
-							this node continues the upstream session — shared memory, cheaper via prompt cache
+							continues the upstream session — shared memory, cheaper via prompt cache
 						{:else}
 							spawns a fresh claw session (default)
 						{/if}
@@ -221,14 +239,14 @@
 				</div>
 
 				<div>
-					<label for="node-model" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+					<label for="node-model" class="mb-1.5 block text-[11px] font-medium text-fg-2">
 						Model
 					</label>
 					<select
 						id="node-model"
 						value={node.data.model}
 						onchange={(e) => updateNodeData(node.id, { model: e.currentTarget.value })}
-						class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
 					>
 						{#each models as model (model)}
 							<option value={model}>{model}</option>
@@ -237,8 +255,8 @@
 				</div>
 
 				<div>
-					<label for="node-path" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
-						Path <span class="ml-1 text-zinc-600">(optional)</span>
+					<label for="node-path" class="mb-1.5 block text-[11px] font-medium text-fg-2">
+						Path <span class="ml-1 text-fg-muted">(optional)</span>
 					</label>
 					<input
 						id="node-path"
@@ -247,14 +265,14 @@
 						value={node.data.path ?? ''}
 						oninput={(e) =>
 							updateNodeData(node.id, { path: e.currentTarget.value || undefined })}
-						class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs text-fg focus:border-accent focus:outline-none"
 					/>
 				</div>
 
 				<div>
-					<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+					<span class="mb-1.5 block text-[11px] font-medium text-fg-2">
 						Output format
-						<span class="ml-1 font-normal text-zinc-600">json enables cost tracking</span>
+						<span class="ml-1 font-normal text-fg-muted">json enables cost tracking</span>
 					</span>
 					<div class="flex gap-1">
 						{#each outputFormats as fmt (fmt)}
@@ -263,18 +281,49 @@
 								type="button"
 								onclick={() => updateNodeData(node.id, { outputFormat: fmt })}
 								class="flex-1 rounded border px-2 py-1 text-[11px] transition-colors {active
-									? 'border-emerald-600 bg-emerald-600/10 text-emerald-400'
-									: 'border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'}"
+									? 'border-accent bg-accent-dim text-accent'
+									: 'border-border text-fg-3 hover:border-border hover:text-fg-2'}"
 							>
 								{fmt}
 							</button>
 						{/each}
 					</div>
 				</div>
+
+				{@const nodeCompression = node.data.compression ?? 'global'}
+				{@const effectiveCompression = nodeCompression === 'global' ? settings.globalCompression : nodeCompression}
+				<div>
+					<span class="mb-1.5 block text-[11px] font-medium text-fg-2">
+						Caveman mode
+					</span>
+					<div class="flex gap-1">
+						{#each compressionLevels as level (level.value)}
+							{@const active = nodeCompression === level.value}
+							<button
+								type="button"
+								onclick={() => updateNodeData(node.id, { compression: level.value === 'global' ? undefined : level.value })}
+								class="flex-1 rounded border px-2 py-1 text-[11px] transition-colors {active
+									? 'border-accent bg-accent-dim text-accent'
+									: 'border-border text-fg-3 hover:border-border hover:text-fg-2'}"
+							>
+								{level.label}
+							</button>
+						{/each}
+					</div>
+					<p class="mt-1 text-[11px] text-fg-muted">
+						{#if effectiveCompression === 'lite'}
+							concise output, full sentences, no filler{#if nodeCompression === 'global'} (from global){/if}
+						{:else if effectiveCompression === 'full'}
+							maximum brevity, fragments, ~65% fewer tokens{#if nodeCompression === 'global'} (from global){/if}
+						{:else}
+							normal verbose output{#if nodeCompression === 'global'} (from global){/if}
+						{/if}
+					</p>
+				</div>
 			{/if}
 
 			<div>
-				<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Failure policy</span>
+				<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Failure policy</span>
 				<div class="flex gap-1">
 					{#each failurePolicies as policy (policy)}
 						<button
@@ -282,8 +331,8 @@
 							onclick={() => updateNodeData(node.id, { failurePolicy: policy })}
 							class="flex-1 rounded border px-2 py-1 text-[11px] capitalize transition-colors {node
 								.data.failurePolicy === policy
-								? 'border-emerald-600 bg-emerald-600/10 text-emerald-400'
-								: 'border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'}"
+								? 'border-accent bg-accent-dim text-accent'
+								: 'border-border text-fg-3 hover:border-border hover:text-fg-2'}"
 						>
 							{policy}
 						</button>
@@ -293,7 +342,7 @@
 
 			{#if node.data.failurePolicy === 'retry'}
 				<div>
-					<label for="node-retry" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+					<label for="node-retry" class="mb-1.5 block text-[11px] font-medium text-fg-2">
 						Retry count
 					</label>
 					<input
@@ -304,14 +353,14 @@
 						value={node.data.retryCount ?? 1}
 						oninput={(e) =>
 							updateNodeData(node.id, { retryCount: Number(e.currentTarget.value) })}
-						class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
 					/>
 				</div>
 			{/if}
 
 			{#if !isPauseNode}
 				<div>
-					<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Permission mode</span>
+					<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Permission mode</span>
 					<div class="flex gap-1">
 						{#each CLAW_PERMISSION_MODES as mode (mode)}
 							{@const active =
@@ -320,8 +369,8 @@
 								type="button"
 								onclick={() => updateNodeData(node.id, { permissionMode: mode })}
 								class="flex-1 rounded border px-2 py-1 text-[11px] transition-colors {active
-									? 'border-emerald-600 bg-emerald-600/10 text-emerald-400'
-									: 'border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'}"
+									? 'border-accent bg-accent-dim text-accent'
+									: 'border-border text-fg-3 hover:border-border hover:text-fg-2'}"
 							>
 								{permissionModeLabels[mode]}
 							</button>
@@ -331,16 +380,16 @@
 
 				<div>
 					<div class="mb-1.5 flex items-center justify-between">
-						<span class="block text-[11px] font-medium text-zinc-400">
+						<span class="block text-[11px] font-medium text-fg-2">
 							Allowed tools
-							<span class="ml-1 font-normal text-zinc-600">
+							<span class="ml-1 font-normal text-fg-muted">
 								leave empty = all allowed by mode
 							</span>
 						</span>
 						<button
 							type="button"
 							onclick={clearAllowedTools}
-							class="text-[10px] text-zinc-500 hover:text-zinc-300"
+							class="text-[10px] text-fg-3 hover:text-fg-2"
 						>
 							Clear
 						</button>
@@ -349,7 +398,7 @@
 						{#each toolGroups as group (group.label)}
 							<div>
 								<div
-									class="mb-1.5 text-[10px] font-medium tracking-wide text-zinc-500 uppercase"
+									class="mb-1.5 text-[10px] font-medium tracking-wide text-fg-3 uppercase"
 								>
 									{group.label} ({group.tools.length})
 								</div>
@@ -361,8 +410,8 @@
 											class="rounded border px-1.5 py-0.5 font-mono text-[10px] transition-colors {selectedTools.has(
 												tool
 											)
-												? 'border-emerald-600 bg-emerald-600/10 text-emerald-300'
-												: 'border-zinc-700 text-zinc-400 hover:border-zinc-600'}"
+												? 'border-accent bg-accent-dim text-accent'
+												: 'border-border text-fg-3 hover:border-border hover:text-fg-2'}"
 										>
 											{tool}
 										</button>
@@ -375,7 +424,7 @@
 			{/if}
 
 			<div>
-				<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Status</span>
+				<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Status</span>
 				<span
 					class="inline-block rounded px-2 py-0.5 text-[11px] font-medium capitalize {statusColors[
 						node.data.status
@@ -387,16 +436,16 @@
 
 			{#if node.data.costUsd !== undefined || node.data.inputTokens !== undefined}
 				<div>
-					<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Usage</span>
-					<div class="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] text-zinc-400">
+					<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Usage</span>
+					<div class="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[11px] text-fg-3">
 						{#if node.data.costUsd !== undefined}
-							<span>cost: <span class="text-emerald-400">${node.data.costUsd.toFixed(4)}</span></span>
+							<span>cost: <span class="text-accent">${node.data.costUsd.toFixed(4)}</span></span>
 						{/if}
 						{#if node.data.inputTokens !== undefined}
-							<span>in: <span class="text-zinc-200">{node.data.inputTokens}</span></span>
+							<span>in: <span class="text-fg">{node.data.inputTokens}</span></span>
 						{/if}
 						{#if node.data.outputTokens !== undefined}
-							<span>out: <span class="text-zinc-200">{node.data.outputTokens}</span></span>
+							<span>out: <span class="text-fg">{node.data.outputTokens}</span></span>
 						{/if}
 					</div>
 				</div>
@@ -406,26 +455,26 @@
 				<div>
 					<span class="mb-1.5 block text-[11px] font-medium text-red-400">Error</span>
 					<pre
-						class="max-h-32 overflow-auto rounded border border-red-900/50 bg-red-950/20 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap text-red-300">{node
+						class="max-h-32 overflow-auto rounded border border-red-900/50 bg-red-950/20 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-red-300">{node
 							.data.error}</pre>
 				</div>
 			{/if}
 
 			{#if node.data.output}
 				<div>
-					<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Output</span>
+					<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Output</span>
 					<pre
-						class="max-h-48 overflow-auto rounded border border-zinc-800 bg-zinc-950 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap text-zinc-300">{node
+						class="max-h-48 overflow-auto rounded border border-border bg-surface p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-fg-2">{node
 							.data.output}</pre>
 				</div>
 			{/if}
 		</div>
 
-		<div class="border-t border-zinc-800 px-4 py-3">
+		<div class="border-t border-border px-4 py-3">
 			<button
 				type="button"
 				onclick={() => removeNode(node.id)}
-				class="w-full rounded border border-red-900/70 px-3 py-1.5 text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300"
+				class="w-full rounded border border-danger/40 px-3 py-1.5 text-xs text-danger hover:bg-danger/10"
 			>
 				Delete node
 			</button>
@@ -433,23 +482,23 @@
 	</aside>
 {:else if selectedEdge}
 	{@const edge = selectedEdge}
-	<aside class="flex w-80 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
-		<div class="flex items-start justify-between border-b border-zinc-800 px-4 py-3">
+	<aside class="flex w-80 shrink-0 flex-col border-l border-border bg-surface-raised">
+		<div class="flex items-start justify-between border-b border-border px-4 py-3">
 			<div>
 				<div class="flex items-center gap-2">
 					<span class="h-2 w-2 rounded-full bg-sky-500"></span>
-					<h2 class="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">
+					<h2 class="text-[10px] font-semibold tracking-widest text-fg-3 uppercase">
 						EDGE
 					</h2>
 				</div>
-				<p class="mt-1 text-xs text-zinc-400">
+				<p class="mt-1 text-xs text-fg-3">
 					{edge.source.slice(0, 6)} → {edge.target.slice(0, 6)}
 				</p>
 			</div>
 			<button
 				type="button"
 				onclick={deselectAll}
-				class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+				class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg-2"
 				aria-label="Close panel"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -460,9 +509,9 @@
 
 		<div class="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
 			<div>
-				<label for="edge-condition" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+				<label for="edge-condition" class="mb-1.5 block text-[11px] font-medium text-fg-2">
 					Condition
-					<span class="ml-1 font-normal text-zinc-600">
+					<span class="ml-1 font-normal text-fg-muted">
 						JS expression — receives output, error, status
 					</span>
 				</label>
@@ -472,27 +521,27 @@
 					value={edgeCondition}
 					placeholder="output.includes('ERROR')"
 					oninput={(e) => updateEdgeCondition(e.currentTarget.value)}
-					class="w-full resize-y rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs leading-relaxed text-zinc-100 focus:border-emerald-500 focus:outline-none"
+					class="w-full resize-y rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs leading-relaxed text-fg focus:border-accent focus:outline-none"
 				></textarea>
 				{#if edgeConditionValid !== true}
 					<p class="mt-1 text-[10px] text-red-400">{edgeConditionValid}</p>
 				{:else if edgeCondition}
-					<p class="mt-1 text-[10px] text-emerald-500">valid expression</p>
+					<p class="mt-1 text-[10px] text-accent">valid expression</p>
 				{:else}
-					<p class="mt-1 text-[10px] text-zinc-600">
+					<p class="mt-1 text-[10px] text-fg-muted">
 						empty = always follow this edge
 					</p>
 				{/if}
 			</div>
 
 			<div>
-				<span class="mb-1.5 block text-[11px] font-medium text-zinc-400">Examples</span>
+				<span class="mb-1.5 block text-[11px] font-medium text-fg-2">Examples</span>
 				<div class="flex flex-col gap-1">
 					{#each ['output.includes("ERROR")', 'output.length > 100', 'status === "done"', '!error'] as example (example)}
 						<button
 							type="button"
 							onclick={() => updateEdgeCondition(example)}
-							class="w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 text-left font-mono text-[10px] text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+							class="w-full rounded border border-border bg-surface px-2 py-1 text-left font-mono text-[10px] text-fg-3 hover:border-border hover:text-fg-2"
 						>
 							{example}
 						</button>
@@ -501,11 +550,11 @@
 			</div>
 		</div>
 
-		<div class="border-t border-zinc-800 px-4 py-3">
+		<div class="border-t border-border px-4 py-3">
 			<button
 				type="button"
 				onclick={deleteSelectedEdge}
-				class="w-full rounded border border-red-900/70 px-3 py-1.5 text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300"
+				class="w-full rounded border border-danger/40 px-3 py-1.5 text-xs text-danger hover:bg-danger/10"
 			>
 				Delete edge
 			</button>

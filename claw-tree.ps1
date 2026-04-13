@@ -27,16 +27,21 @@ if (-not (Test-Path $clawBin)) {
     & (Join-Path $repoRoot 'setup.ps1')
 }
 
+$env:CLAW_TREE_WORKSPACE = (Get-Location).Path
+
 Write-Step "Starting SvelteKit dev server on port $Port"
+Write-Ok "workspace: $env:CLAW_TREE_WORKSPACE"
 
 # Launch the dev server as a background job
+$workspace = $env:CLAW_TREE_WORKSPACE
 $serverJob = Start-Job -ScriptBlock {
-    param($dir, $port)
+    param($dir, $port, $ws)
     Set-Location $dir
     $env:HOST = '0.0.0.0'
     $env:PORT = $port
+    $env:CLAW_TREE_WORKSPACE = $ws
     npm run dev -- --port $port
-} -ArgumentList $webDir, $Port
+} -ArgumentList $webDir, $Port, $workspace
 
 Start-Sleep -Seconds 2
 

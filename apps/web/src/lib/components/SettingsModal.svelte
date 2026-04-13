@@ -12,6 +12,7 @@
 	let anthropicKey = $state('');
 	let openaiKey = $state('');
 	let defaultModel = $state('claude-sonnet-4-6');
+	let workspacePath = $state('');
 	let showAnthropic = $state(false);
 	let showOpenai = $state(false);
 
@@ -20,6 +21,7 @@
 			anthropicKey = settings.anthropicApiKey;
 			openaiKey = settings.openaiApiKey;
 			defaultModel = settings.defaultModel;
+			workspacePath = settings.workspacePath;
 			showAnthropic = false;
 			showOpenai = false;
 		}
@@ -29,7 +31,8 @@
 		saveSettings({
 			anthropicApiKey: anthropicKey.trim(),
 			openaiApiKey: openaiKey.trim(),
-			defaultModel
+			defaultModel,
+			workspacePath: workspacePath.trim()
 		});
 		onClose();
 	}
@@ -43,8 +46,8 @@
 	}
 
 	function mask(key: string): string {
-		if (key.length < 8) return '••••••••';
-		return `${key.slice(0, 6)}••••••${key.slice(-4)}`;
+		if (key.length < 8) return '--------';
+		return `${key.slice(0, 6)}------${key.slice(-4)}`;
 	}
 </script>
 
@@ -58,14 +61,14 @@
 		aria-labelledby="settings-title"
 	>
 		<div
-			class="w-[520px] max-w-[90vw] rounded-lg border border-zinc-800 bg-zinc-900 shadow-2xl"
+			class="w-[520px] max-w-[90vw] rounded-xl border border-border bg-surface-raised shadow-2xl"
 		>
-			<div class="flex items-start justify-between border-b border-zinc-800 px-5 py-3">
+			<div class="flex items-start justify-between border-b border-border px-5 py-3">
 				<div>
-					<div class="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">
+					<div class="text-[10px] font-semibold tracking-widest text-fg-3 uppercase">
 						Settings
 					</div>
-					<h2 id="settings-title" class="mt-0.5 text-sm font-medium text-zinc-100">
+					<h2 id="settings-title" class="mt-0.5 text-sm font-medium text-fg">
 						API keys &amp; defaults
 					</h2>
 				</div>
@@ -73,7 +76,7 @@
 					type="button"
 					onclick={onClose}
 					aria-label="Close settings"
-					class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+					class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg-2"
 				>
 					<svg
 						class="h-4 w-4"
@@ -90,15 +93,15 @@
 			<div class="flex flex-col gap-5 p-5">
 				<div>
 					<div class="mb-1.5 flex items-center justify-between">
-						<label for="anthropic-key" class="text-[11px] font-medium text-zinc-400">
+						<label for="anthropic-key" class="text-[11px] font-medium text-fg-2">
 							Anthropic API key
 						</label>
 						{#if settings.anthropicApiKey}
-							<span class="font-mono text-[10px] text-emerald-500">
+							<span class="font-mono text-[10px] text-accent">
 								saved: {mask(settings.anthropicApiKey)}
 							</span>
 						{:else}
-							<span class="text-[10px] text-zinc-600">not set</span>
+							<span class="text-[10px] text-fg-muted">not set</span>
 						{/if}
 					</div>
 					<div class="relative">
@@ -107,29 +110,29 @@
 							type={showAnthropic ? 'text' : 'password'}
 							placeholder="sk-ant-..."
 							bind:value={anthropicKey}
-							class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 pr-16 font-mono text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+							class="w-full rounded border border-border bg-surface px-2.5 py-1.5 pr-16 font-mono text-xs text-fg focus:border-accent focus:outline-none"
 						/>
 						<button
 							type="button"
 							onclick={() => (showAnthropic = !showAnthropic)}
-							class="absolute inset-y-0 right-0 px-2 text-[10px] text-zinc-500 hover:text-zinc-300"
+							class="absolute inset-y-0 right-0 px-2 text-[10px] text-fg-3 hover:text-fg-2"
 						>
 							{showAnthropic ? 'hide' : 'show'}
 						</button>
 					</div>
-					<p class="mt-1 text-[10px] text-zinc-600">
+					<p class="mt-1 text-[10px] text-fg-muted">
 						Used for claude-* models. Stored in browser localStorage.
 					</p>
 				</div>
 
 				<div>
 					<div class="mb-1.5 flex items-center justify-between">
-						<label for="openai-key" class="text-[11px] font-medium text-zinc-400">
+						<label for="openai-key" class="text-[11px] font-medium text-fg-2">
 							OpenAI API key
-							<span class="ml-1 font-normal text-zinc-600">(optional)</span>
+							<span class="ml-1 font-normal text-fg-muted">(optional)</span>
 						</label>
 						{#if settings.openaiApiKey}
-							<span class="font-mono text-[10px] text-emerald-500">
+							<span class="font-mono text-[10px] text-accent">
 								saved: {mask(settings.openaiApiKey)}
 							</span>
 						{/if}
@@ -140,29 +143,29 @@
 							type={showOpenai ? 'text' : 'password'}
 							placeholder="sk-..."
 							bind:value={openaiKey}
-							class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 pr-16 font-mono text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+							class="w-full rounded border border-border bg-surface px-2.5 py-1.5 pr-16 font-mono text-xs text-fg focus:border-accent focus:outline-none"
 						/>
 						<button
 							type="button"
 							onclick={() => (showOpenai = !showOpenai)}
-							class="absolute inset-y-0 right-0 px-2 text-[10px] text-zinc-500 hover:text-zinc-300"
+							class="absolute inset-y-0 right-0 px-2 text-[10px] text-fg-3 hover:text-fg-2"
 						>
 							{showOpenai ? 'hide' : 'show'}
 						</button>
 					</div>
-					<p class="mt-1 text-[10px] text-zinc-600">
+					<p class="mt-1 text-[10px] text-fg-muted">
 						Only needed for gpt-* models.
 					</p>
 				</div>
 
 				<div>
-					<label for="default-model" class="mb-1.5 block text-[11px] font-medium text-zinc-400">
+					<label for="default-model" class="mb-1.5 block text-[11px] font-medium text-fg-2">
 						Default model for new nodes
 					</label>
 					<select
 						id="default-model"
 						bind:value={defaultModel}
-						class="w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
 					>
 						<option value="claude-opus-4-6">claude-opus-4-6</option>
 						<option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
@@ -172,42 +175,63 @@
 					</select>
 				</div>
 
-				<p class="rounded border border-amber-900/40 bg-amber-950/20 px-3 py-2 text-[10px] leading-relaxed text-amber-300/90">
+				<div>
+					<label for="workspace-path" class="mb-1.5 block text-[11px] font-medium text-fg-2">
+						Workspace path
+						<span class="ml-1 font-normal text-fg-muted">where claw reads/writes files</span>
+					</label>
+					<input
+						id="workspace-path"
+						type="text"
+						placeholder="/home/user/my-project"
+						bind:value={workspacePath}
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs text-fg focus:border-accent focus:outline-none"
+					/>
+					<p class="mt-1 text-[11px] text-fg-muted">
+						{#if workspacePath.trim()}
+							Nodes will run in this directory.
+						{:else}
+							Empty = claw runs in the claw-tree server directory (apps/web).
+						{/if}
+					</p>
+				</div>
+
+				<p class="rounded border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-300">
 					Keys never leave your machine. They are sent from your browser to the local
 					SvelteKit server and passed as environment variables to the claw subprocess.
 				</p>
 
 				<div>
 					<div class="mb-1.5 flex items-center justify-between">
-						<span class="text-[11px] font-medium text-zinc-400">Node output cache</span>
-						<span class="font-mono text-[10px] text-zinc-500">{cacheSize()} entries</span>
+						<span class="text-[11px] font-medium text-fg-2">Node output cache</span>
+						<span class="font-mono text-[10px] text-fg-3">{cacheSize()} entries</span>
 					</div>
 					<button
 						type="button"
 						onclick={clearCache}
-						class="w-full rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-red-900 hover:text-red-300"
+						class="w-full rounded border border-border px-3 py-1.5 text-xs text-fg-2 hover:border-danger/40 hover:text-danger"
 					>
 						Clear cache
 					</button>
-					<p class="mt-1 text-[10px] text-zinc-600">
+					<p class="mt-1 text-[10px] text-fg-muted">
 						Nodes skip re-running when their inputs match a prior successful run. Cached results
-						show a cyan badge on the node card.
+						show a badge on the node card.
 					</p>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end gap-2 border-t border-zinc-800 px-5 py-3">
+			<div class="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
 				<button
 					type="button"
 					onclick={onClose}
-					class="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+					class="rounded border border-border bg-surface-overlay px-3 py-1 text-xs text-fg-2 hover:text-fg"
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={save}
-					class="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500"
+					class="btn-push rounded bg-accent px-3 py-1 text-xs font-medium text-surface"
 				>
 					Save
 				</button>

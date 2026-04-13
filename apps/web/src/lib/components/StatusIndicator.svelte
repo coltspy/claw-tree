@@ -10,28 +10,17 @@
 
 	const dotClass = $derived(
 		{
-			connected: 'bg-emerald-500',
-			disconnected: 'bg-red-500',
+			connected: 'bg-accent',
+			disconnected: 'bg-danger',
 			checking: 'bg-amber-400 animate-pulse'
 		}[status]
 	);
 
-	const label = $derived.by(() => {
-		if (status === 'connected') return version ? `claw ${version}` : 'Server online';
-		if (status === 'disconnected') return 'Server offline';
-		return 'Checking…';
+	const title = $derived.by(() => {
+		if (status === 'connected') return version ? `claw ${version} — connected` : 'Server online';
+		if (status === 'disconnected') return 'claw binary not reachable — check CLAW_BIN or rebuild';
+		return 'Pinging claw CLI...';
 	});
-
-	const title = $derived(
-		status === 'disconnected'
-			? 'claw binary not reachable — check CLAW_BIN or rebuild'
-			: status === 'connected'
-				? 'claw CLI responded to --version'
-				: 'Pinging claw CLI…'
-	);
 </script>
 
-<div class="flex items-center gap-2 text-xs text-zinc-400" {title}>
-	<span class="h-2 w-2 rounded-full {dotClass}"></span>
-	<span>{label}</span>
-</div>
+<span class="inline-block h-1.5 w-1.5 rounded-full {dotClass}" {title}></span>

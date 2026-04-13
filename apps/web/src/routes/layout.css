@@ -1,8 +1,100 @@
 @import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+	--font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+	--surface: #0a0a0b;
+	--surface-raised: #141416;
+	--surface-overlay: #1e1e21;
+	--border: #2a2a2e;
+	--border-subtle: rgba(42, 42, 46, 0.5);
+	--fg: #f0f0f2;
+	--fg-2: #9a9aa0;
+	--fg-3: #6b6b72;
+	--fg-muted: #4a4a52;
+	--accent: #10b981;
+	--accent-hover: #34d399;
+	--accent-dim: rgba(16, 185, 129, 0.12);
+	--accent-shadow: #065f46;
+	--danger: #ef4444;
+	--danger-shadow: #991b1b;
+}
+
+[data-theme='light'] {
+	--surface: #ffffff;
+	--surface-raised: #f8f8fa;
+	--surface-overlay: #f0f0f2;
+	--border: #e2e2e6;
+	--border-subtle: rgba(226, 226, 230, 0.6);
+	--fg: #141416;
+	--fg-2: #55555c;
+	--fg-3: #7a7a82;
+	--fg-muted: #acacb4;
+	--accent: #059669;
+	--accent-hover: #10b981;
+	--accent-dim: rgba(5, 150, 105, 0.08);
+	--accent-shadow: #a7f3d0;
+	--danger: #dc2626;
+	--danger-shadow: #fca5a5;
+}
+
+@theme {
+	--font-family-sans: var(--font-sans);
+	--color-surface: var(--surface);
+	--color-surface-raised: var(--surface-raised);
+	--color-surface-overlay: var(--surface-overlay);
+	--color-border: var(--border);
+	--color-border-subtle: var(--border-subtle);
+	--color-fg: var(--fg);
+	--color-fg-2: var(--fg-2);
+	--color-fg-3: var(--fg-3);
+	--color-fg-muted: var(--fg-muted);
+	--color-accent: var(--accent);
+	--color-accent-hover: var(--accent-hover);
+	--color-accent-dim: var(--accent-dim);
+	--color-danger: var(--danger);
+}
 
 @layer base {
 	html,
 	body {
 		height: 100%;
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	* {
+		transition:
+			background-color 150ms ease,
+			border-color 150ms ease,
+			color 150ms ease;
+	}
+}
+
+@layer components {
+	.btn-push {
+		position: relative;
+		transform: translateY(0);
+		box-shadow: 0 3px 0 var(--_shadow, var(--accent-shadow));
+		transition:
+			transform 80ms ease,
+			box-shadow 80ms ease;
+	}
+	.btn-push:hover:not(:disabled):not(.btn-push-disabled) {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 0 var(--_shadow, var(--accent-shadow));
+	}
+	.btn-push:active:not(:disabled):not(.btn-push-disabled) {
+		transform: translateY(2px);
+		box-shadow: 0 1px 0 var(--_shadow, var(--accent-shadow));
+	}
+	.btn-push:disabled,
+	.btn-push-disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.btn-push-danger {
+		--_shadow: var(--danger-shadow);
 	}
 }

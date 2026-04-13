@@ -5,7 +5,8 @@ import type {
 	FailurePolicy,
 	ClawPermissionMode,
 	ClawTool,
-	OutputFormat
+	OutputFormat,
+	Compression
 } from '$lib/types/nodes';
 import { canvas } from './canvas.svelte';
 
@@ -20,6 +21,7 @@ export interface NodeData extends Record<string, unknown> {
 	permissionMode?: ClawPermissionMode;
 	allowedTools?: ClawTool[];
 	outputFormat?: OutputFormat;
+	compression?: Compression;
 	resumeFromPrevious?: boolean;
 	status: NodeStatus;
 	output?: string;

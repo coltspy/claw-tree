@@ -9,6 +9,7 @@
 	import '@xyflow/svelte/dist/style.css';
 	import { workflow, addNodeAt } from '$lib/stores/workflow.svelte';
 	import { canvas } from '$lib/stores/canvas.svelte';
+	import { ui } from '$lib/stores/ui.svelte';
 	import type { NodeType } from '$lib/types/nodes';
 	import WorkflowNodeCard from './nodes/WorkflowNodeCard.svelte';
 	import CanvasBridge from './CanvasBridge.svelte';
@@ -118,8 +119,8 @@
 	{#if workflow.nodes.length === 0}
 		<div class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
 			<div class="text-center">
-				<p class="text-sm text-zinc-500">Empty canvas</p>
-				<p class="mt-1 text-xs text-zinc-600">
+				<p class="text-sm text-fg-3">Empty canvas</p>
+				<p class="mt-1 text-xs text-fg-muted">
 					Drag a node from the left, or click to add
 				</p>
 			</div>
@@ -130,7 +131,7 @@
 		bind:nodes={workflow.nodes}
 		bind:edges={workflow.edges}
 		{nodeTypes}
-		colorMode="dark"
+		colorMode={ui.theme === 'light' ? 'light' : 'dark'}
 		snapGrid={[20, 20]}
 		minZoom={0.3}
 		maxZoom={1.6}
@@ -155,10 +156,10 @@
 		<div
 			role="menu"
 			style="position: fixed; left: {picker.screenX}px; top: {picker.screenY}px;"
-			class="z-50 w-48 -translate-x-1/2 rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl"
+			class="z-50 w-48 -translate-x-1/2 rounded-lg border border-border bg-surface-raised shadow-xl"
 		>
-			<div class="border-b border-zinc-800 px-3 py-2">
-				<div class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+			<div class="border-b border-border px-3 py-2">
+				<div class="text-[11px] font-medium tracking-wide text-fg-3 uppercase">
 					Add connected node
 				</div>
 			</div>
@@ -168,7 +169,7 @@
 						type="button"
 						role="menuitem"
 						onclick={() => pickNodeType(option.type)}
-						class="flex items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-zinc-300 hover:bg-zinc-800"
+						class="flex items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fg-2 hover:bg-surface-overlay"
 					>
 						<span class="h-1.5 w-1.5 rounded-full bg-current {option.color}"></span>
 						<span>{option.label}</span>

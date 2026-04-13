@@ -14,7 +14,7 @@ const HEALTH_TIMEOUT_MS = 5000;
 export const GET: RequestHandler = async () => {
 	try {
 		const version = await runClawVersion();
-		return json({ ok: true, version, bin: CLAW_BIN });
+		return json({ ok: true, version, bin: CLAW_BIN, workspace: process.env.CLAW_TREE_WORKSPACE ?? null });
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		return json(

@@ -1,15 +1,21 @@
+import type { Compression } from '$lib/types/nodes';
+
 const STORAGE_KEY = 'claw-tree:settings';
 
 export interface Settings {
 	anthropicApiKey: string;
 	openaiApiKey: string;
 	defaultModel: string;
+	globalCompression: Compression;
+	workspacePath: string;
 }
 
 const DEFAULTS: Settings = {
 	anthropicApiKey: '',
 	openaiApiKey: '',
-	defaultModel: 'claude-sonnet-4-6'
+	defaultModel: 'claude-sonnet-4-6',
+	globalCompression: 'off',
+	workspacePath: ''
 };
 
 function load(): Settings {

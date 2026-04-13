@@ -34,7 +34,7 @@
 	{#if showButton}
 		<button
 			type="button"
-			class="mt-2 rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-emerald-500"
+			class="mt-2 rounded bg-accent px-2 py-0.5 text-[10px] font-medium text-surface hover:brightness-110"
 			onclick={onAction}
 		>
 			{label}

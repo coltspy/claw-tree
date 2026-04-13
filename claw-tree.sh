@@ -48,7 +48,10 @@ if [ ! -x "$claw_bin" ]; then
     "$repo_root/setup.sh"
 fi
 
+export CLAW_TREE_WORKSPACE="$PWD"
+
 step "Starting SvelteKit dev server on port $port"
+ok "workspace: $CLAW_TREE_WORKSPACE"
 
 (cd "$web_dir" && HOST=0.0.0.0 PORT="$port" npm run dev -- --port "$port") &
 server_pid=$!

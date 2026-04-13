@@ -99,15 +99,15 @@
 	);
 </script>
 
-<aside class="flex w-56 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900">
-	<div class="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-		<h2 class="text-[11px] font-medium tracking-wide text-zinc-400">Workflows</h2>
+<aside class="flex w-56 shrink-0 flex-col border-r border-border bg-surface-raised">
+	<div class="flex items-center justify-between border-b border-border px-4 py-3">
+		<h2 class="text-[11px] font-medium tracking-wide text-fg-3">Workflows</h2>
 		<div class="flex items-center gap-1">
 			<button
 				type="button"
 				onclick={() => saveCurrentWorkflow()}
 				title="Save current workflow"
-				class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+				class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg"
 			>
 				<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M13 5v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1h6l3 3z" />
@@ -118,7 +118,7 @@
 				type="button"
 				onclick={newWorkflow}
 				title="New empty workflow"
-				class="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+				class="rounded p-1 text-fg-3 hover:bg-surface-overlay hover:text-fg"
 			>
 				<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M8 3v10M3 8h10" />
@@ -137,8 +137,8 @@
 						onclick={() => loadSavedWorkflow(wf.id)}
 						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') loadSavedWorkflow(wf.id); }}
 						class="group flex cursor-pointer items-start justify-between rounded-md px-2.5 py-2 transition-colors {library.activeId === wf.id
-							? 'border-l-2 border-emerald-500 bg-zinc-800'
-							: 'border-l-2 border-transparent hover:bg-zinc-800/50'}"
+							? 'border-l-2 border-accent bg-surface-overlay'
+							: 'border-l-2 border-transparent hover:bg-surface-overlay'}"
 					>
 						<div class="min-w-0 flex-1">
 							{#if editingId === wf.id}
@@ -148,14 +148,14 @@
 									onblur={finishRename}
 									onkeydown={renameKeydown}
 									onclick={(e) => e.stopPropagation()}
-									class="w-full rounded border border-zinc-600 bg-zinc-950 px-1 py-0.5 text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none"
+									class="w-full rounded border border-border bg-surface px-1 py-0.5 text-xs text-fg focus:border-accent focus:outline-none"
 								/>
 							{:else}
-								<div class="truncate text-xs font-medium text-zinc-200">
+								<div class="truncate text-xs font-medium text-fg">
 									{wf.name}
 								</div>
 							{/if}
-							<div class="mt-0.5 flex items-center gap-2 text-[10px] text-zinc-600">
+							<div class="mt-0.5 flex items-center gap-2 text-[11px] text-fg-muted">
 								<span>{wf.nodes.length} nodes</span>
 								<span>{relativeTime(wf.updatedAt)}</span>
 							</div>
@@ -165,7 +165,7 @@
 								type="button"
 								onclick={(e) => { e.stopPropagation(); startRename(wf.id, wf.name); }}
 								aria-label="Rename workflow"
-								class="rounded p-0.5 text-zinc-500 hover:text-zinc-300"
+								class="rounded p-0.5 text-fg-3 hover:text-fg"
 							>
 								<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
 									<path d="M10.5 2.5l3 3M2 11l7-7 3 3-7 7H2v-3z" />
@@ -175,7 +175,7 @@
 								type="button"
 								onclick={(e) => { e.stopPropagation(); deleteSavedWorkflow(wf.id); }}
 								aria-label="Delete workflow"
-								class="rounded p-0.5 text-zinc-500 hover:text-red-400"
+								class="rounded p-0.5 text-fg-3 hover:text-red-400"
 							>
 								<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
 									<path d="M4 4l8 8M12 4l-8 8" />
@@ -187,8 +187,8 @@
 			</div>
 		{/if}
 
-		<div class="border-t border-zinc-800/60 px-4 py-3">
-			<h3 class="mb-2 text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">
+		<div class="border-t border-border-subtle px-4 py-3">
+			<h3 class="mb-2 text-[11px] font-semibold tracking-widest text-fg-3 uppercase">
 				Examples
 			</h3>
 			<div class="flex flex-col gap-1">
@@ -196,10 +196,10 @@
 					<button
 						type="button"
 						onclick={() => loadExample(example.file, example.name)}
-						class="flex flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-800/50"
+						class="flex flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-overlay"
 					>
-						<span class="text-[11px] font-medium text-zinc-300">{example.name}</span>
-						<span class="text-[10px] text-zinc-600">{example.description}</span>
+						<span class="text-[11px] font-medium text-fg-2">{example.name}</span>
+						<span class="text-[11px] text-fg-3">{example.description}</span>
 					</button>
 				{/each}
 			</div>

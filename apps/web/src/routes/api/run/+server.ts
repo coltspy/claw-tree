@@ -25,6 +25,7 @@ interface RunBody {
 	resumeSessionId?: string;
 	anthropicApiKey?: string;
 	openaiApiKey?: string;
+	workspacePath?: string;
 }
 
 const META_MARKER = '<<<CLAW_TREE_META>>>';
@@ -76,7 +77,11 @@ export const POST: RequestHandler = async ({ request }) => {
 		args.push('--allowedTools', body.allowedTools.join(','));
 	}
 
-	args.push('-p', body.prompt);
+	const useStdin = !body.resumeSessionId && body.prompt.length > 28_000;
+
+	if (!useStdin) {
+		args.push('-p', body.prompt);
+	}
 
 	if (body.resumeSessionId) {
 		args.push('--resume', body.resumeSessionId);
@@ -86,12 +91,19 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (body.anthropicApiKey) childEnv.ANTHROPIC_API_KEY = body.anthropicApiKey;
 	if (body.openaiApiKey) childEnv.OPENAI_API_KEY = body.openaiApiKey;
 
+	const cwd = body.workspacePath || process.env.CLAW_TREE_WORKSPACE || undefined;
+
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
 			const child = spawn(CLAW_BIN, args, {
-				stdio: ['ignore', 'pipe', 'pipe'],
-				env: childEnv
+				stdio: [useStdin ? 'pipe' : 'ignore', 'pipe', 'pipe'],
+				env: childEnv,
+				cwd
 			});
+
+			if (useStdin) {
+				child.stdin!.end(body.prompt);
+			}
 
 			const encoder = new TextEncoder();
 			let stdoutBuffer = '';
@@ -126,7 +138,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				return stripAnsi(emit);
 			};
 
-			child.stdout.on('data', (chunk: Buffer) => {
+			child.stdout!.on('data', (chunk: Buffer) => {
 				if (closed) return;
 				const clean = processStdout(chunk.toString('utf8'));
 				if (clean.length > 0) {
@@ -134,7 +146,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 			});
 
-			child.stderr.on('data', (chunk: Buffer) => {
+			child.stderr!.on('data', (chunk: Buffer) => {
 				stderrBuffer += stripAnsi(chunk.toString('utf8'));
 			});
 

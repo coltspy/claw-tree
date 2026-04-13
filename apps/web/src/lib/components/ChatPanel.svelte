@@ -67,16 +67,14 @@
 </script>
 
 {#if open}
-	<aside class="flex w-96 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900">
-		<header class="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
+	<aside class="flex w-96 shrink-0 flex-col border-l border-border bg-surface-raised">
+		<header class="flex items-center justify-between border-b border-border px-4 py-3">
 			<div class="min-w-0">
-				<div class="text-sm font-medium text-zinc-100">Chat</div>
+				<div class="text-sm font-medium text-fg">Chat</div>
 				{#if chat.sessionId}
-					<div class="mt-0.5 font-mono text-[10px] text-zinc-500">
-						session {chat.sessionId.slice(0, 8)}…
+					<div class="mt-0.5 font-mono text-[11px] text-fg-muted opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100" title={chat.sessionId}>
+						session {chat.sessionId.slice(0, 8)}
 					</div>
-				{:else}
-					<div class="mt-0.5 font-mono text-[10px] text-zinc-600">no session yet</div>
 				{/if}
 			</div>
 			<div class="flex items-center gap-1">
@@ -86,7 +84,7 @@
 					disabled={chat.sending}
 					aria-label="New chat"
 					title="New chat"
-					class="rounded p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-500"
+					class="rounded p-1.5 text-fg-3 hover:bg-surface-overlay hover:text-fg-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-3"
 				>
 					<svg
 						class="h-4 w-4"
@@ -106,7 +104,7 @@
 					onclick={onClose}
 					aria-label="Close panel"
 					title="Close panel"
-					class="rounded p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+					class="rounded p-1.5 text-fg-3 hover:bg-surface-overlay hover:text-fg-2"
 				>
 					<svg
 						class="h-4 w-4"
@@ -126,8 +124,8 @@
 		<div bind:this={listEl} class="flex-1 space-y-4 overflow-y-auto px-4 py-3">
 			{#if chat.messages.length === 0}
 				<div class="flex h-full flex-col items-center justify-center text-center">
-					<div class="text-xs text-zinc-500">Start a conversation with claw</div>
-					<div class="mt-1 text-[11px] text-zinc-600">
+					<div class="text-xs text-fg-3">Start a conversation with claw</div>
+					<div class="mt-1 text-[11px] text-fg-muted">
 						Messages here share memory with workflow nodes via --resume
 					</div>
 				</div>
@@ -135,14 +133,14 @@
 				{#each chat.messages as msg (msg.id)}
 					{#if msg.role === 'user'}
 						<div
-							class="ml-auto max-w-[85%] rounded-lg border border-emerald-900/50 bg-emerald-900/30 px-3 py-2 text-xs whitespace-pre-wrap text-zinc-100"
+							class="ml-auto max-w-[85%] rounded-lg border border-accent/30 bg-accent-dim px-3 py-2 text-xs whitespace-pre-wrap text-fg"
 						>
 							{msg.content}
 						</div>
 					{:else}
 						<div class="mr-auto max-w-[85%]">
 							<div
-								class="rounded-lg border border-zinc-800 bg-zinc-800/60 px-3 py-2 text-xs whitespace-pre-wrap text-zinc-200"
+								class="rounded-lg border border-border bg-surface-overlay px-3 py-2 text-xs whitespace-pre-wrap text-fg-2"
 							>
 								{#if msg.error}
 									<span
@@ -157,7 +155,7 @@
 								{/if}
 							</div>
 							{#if hasFooter(msg)}
-								<div class="mt-1 font-mono text-[10px] text-zinc-600">{footerLine(msg)}</div>
+								<div class="mt-1 font-mono text-[11px] text-fg-muted">{footerLine(msg)}</div>
 							{/if}
 						</div>
 					{/if}
@@ -165,22 +163,22 @@
 			{/if}
 		</div>
 
-		<div class="border-t border-zinc-800 p-3">
+		<div class="border-t border-border p-3">
 			<textarea
 				rows="3"
 				bind:value={draft}
 				onkeydown={handleKeydown}
 				disabled={chat.sending}
 				placeholder="Ask claw anything. Shift+Enter for new line."
-				class="w-full resize-none rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs text-zinc-100 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+				class="w-full resize-none rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs text-fg focus:border-accent focus:outline-none disabled:opacity-60"
 			></textarea>
 			<div class="mt-2 flex items-center justify-between">
-				<span class="text-[10px] text-zinc-600">Enter to send · Shift+Enter newline</span>
+				<span class="text-[11px] text-fg-muted">Enter to send</span>
 				{#if chat.sending}
 					<button
 						type="button"
 						onclick={() => cancelChat()}
-						class="rounded border border-zinc-700 bg-zinc-800 px-3 py-1 text-[11px] font-medium text-zinc-200 hover:border-zinc-600 hover:bg-zinc-700"
+						class="rounded bg-surface-overlay px-3 py-1 text-[11px] font-medium text-fg-2 hover:text-fg"
 					>
 						Cancel
 					</button>
@@ -189,7 +187,7 @@
 						type="button"
 						onclick={submit}
 						disabled={draft.trim().length === 0}
-						class="rounded border border-emerald-600 bg-emerald-600 px-3 py-1 text-[11px] font-medium text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500"
+						class="btn-push rounded bg-accent px-3 py-1 text-[11px] font-medium text-surface disabled:cursor-not-allowed disabled:opacity-40"
 					>
 						Send
 					</button>
