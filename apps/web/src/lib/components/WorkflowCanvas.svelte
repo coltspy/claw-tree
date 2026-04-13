@@ -7,10 +7,52 @@
 		type NodeTypes
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
+	import { untrack } from 'svelte';
 	import { workflow, addNodeAt, type NodeData } from '$lib/stores/workflow.svelte';
 	import { canvas } from '$lib/stores/canvas.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
 	import type { NodeType, NodeStatus } from '$lib/types/nodes';
+	import { topologicalSort, groupByDepth, CycleError } from '$lib/engine/toposort';
+
+	function autoLayout() {
+		if (workflow.nodes.length < 2) return;
+		try {
+			const ordered = topologicalSort(workflow.nodes, workflow.edges);
+			const groups = groupByDepth(ordered, workflow.edges);
+
+			const X_GAP = 280;
+			const Y_GAP = 220;
+			const START_X = 200;
+			const START_Y = 100;
+
+			const updated = workflow.nodes.map((n) => ({ ...n }));
+			const posMap = new Map<string, { x: number; y: number }>();
+
+			for (let row = 0; row < groups.length; row++) {
+				const group = groups[row];
+				const totalWidth = (group.length - 1) * X_GAP;
+				const offsetX = START_X - totalWidth / 2;
+				for (let col = 0; col < group.length; col++) {
+					posMap.set(group[col].id, {
+						x: offsetX + col * X_GAP,
+						y: START_Y + row * Y_GAP
+					});
+				}
+			}
+
+			for (const node of updated) {
+				const pos = posMap.get(node.id);
+				if (pos) {
+					node.position = pos;
+				}
+			}
+
+			workflow.nodes = updated;
+		} catch (e) {
+			if (e instanceof CycleError) return;
+			throw e;
+		}
+	}
 
 	const edgeColors: Record<NodeStatus, string> = {
 		idle: '',
@@ -24,21 +66,23 @@
 
 	$effect(() => {
 		const nodeMap = new Map(workflow.nodes.map((n) => [n.id, n.data as NodeData]));
-		let changed = false;
-		const updated = workflow.edges.map((e) => {
-			const sourceData = nodeMap.get(e.source);
-			const status = sourceData?.status ?? 'idle';
-			const newStyle = edgeColors[status];
-			const newAnimated = status === 'running';
-			if (e.style !== newStyle || e.animated !== newAnimated) {
-				changed = true;
-				return { ...e, style: newStyle || undefined, animated: newAnimated };
+		untrack(() => {
+			let changed = false;
+			const updated = workflow.edges.map((e) => {
+				const sourceData = nodeMap.get(e.source);
+				const status = sourceData?.status ?? 'idle';
+				const newStyle = edgeColors[status];
+				const newAnimated = status === 'running';
+				if (e.style !== newStyle || e.animated !== newAnimated) {
+					changed = true;
+					return { ...e, style: newStyle || undefined, animated: newAnimated };
+				}
+				return e;
+			});
+			if (changed) {
+				workflow.edges = updated;
 			}
-			return e;
 		});
-		if (changed) {
-			workflow.edges = updated;
-		}
 	});
 	import WorkflowNodeCard from './nodes/WorkflowNodeCard.svelte';
 	import CanvasBridge from './CanvasBridge.svelte';
@@ -175,6 +219,24 @@
 		<MiniMap position="top-right" pannable zoomable width={160} height={100} />
 		<CanvasBridge />
 	</SvelteFlow>
+
+	{#if workflow.nodes.length >= 2}
+		<button
+			type="button"
+			onclick={autoLayout}
+			class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-md border border-border bg-surface-raised px-2 py-1 text-[11px] text-fg-3 hover:text-fg"
+			title="Auto-layout"
+		>
+			<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+				<rect x="1" y="1" width="5" height="4" rx="0.5" />
+				<rect x="10" y="1" width="5" height="4" rx="0.5" />
+				<rect x="5.5" y="11" width="5" height="4" rx="0.5" />
+				<path d="M3.5 5v2.5h9V5" />
+				<path d="M8 7.5V11" />
+			</svg>
+			Auto-layout
+		</button>
+	{/if}
 
 	{#if picker}
 		<button

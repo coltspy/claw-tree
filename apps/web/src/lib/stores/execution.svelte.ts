@@ -144,6 +144,21 @@ export async function runWorkflow() {
 				: 'done';
 		finalizeRun(runId, finalStatus);
 		abortController = null;
+
+		if (typeof document !== 'undefined' && document.hidden && 'Notification' in window) {
+			if (Notification.permission === 'granted') {
+				const title =
+					finalStatus === 'done'
+						? 'Workflow complete'
+						: finalStatus === 'error'
+							? 'Workflow failed'
+							: 'Workflow cancelled';
+				new Notification(title, {
+					body: `${Object.keys(finalRun?.results ?? {}).length} nodes processed`,
+					icon: '/favicon.svg'
+				});
+			}
+		}
 	}
 }
 
@@ -269,7 +284,8 @@ async function executeNode(
 				status: 'done',
 				endedAt: Date.now(),
 				output: result.output,
-				retriesUsed: attempt
+				retriesUsed: attempt,
+				costUsd: result.costUsd
 			});
 			removeActive(node.id);
 			return 'done';
@@ -491,7 +507,7 @@ async function streamNode(
 				outputTokens: cached.outputTokens,
 				fromCache: true
 			});
-			updateNodeResult(runId, nodeId, { output: cached.output });
+			updateNodeResult(runId, nodeId, { output: cached.output, costUsd: cached.costUsd });
 			return {
 				output: cached.output,
 				sessionId: cached.sessionId,

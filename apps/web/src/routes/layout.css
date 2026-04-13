@@ -70,6 +70,25 @@
 			border-color 150ms ease,
 			color 150ms ease;
 	}
+
+	*::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	*::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	*::-webkit-scrollbar-thumb {
+		background: var(--border);
+		border-radius: 3px;
+	}
+	*::-webkit-scrollbar-thumb:hover {
+		background: var(--fg-muted);
+	}
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--border) transparent;
+	}
 }
 
 @layer components {

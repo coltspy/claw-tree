@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { runs, viewRun, deleteRun, forkRun, clearAllRuns, type Run, type RunStatus } from '$lib/stores/runs.svelte';
+	import { runs, viewRun, deleteRun, forkRun, clearAllRuns, downloadRunReport, type Run, type RunStatus } from '$lib/stores/runs.svelte';
 
 	const sortedRuns = $derived.by(() => [...runs.list].sort((a, b) => b.startedAt - a.startedAt));
 
@@ -36,6 +36,11 @@
 		if (!result.success) {
 			console.warn(`Fork failed: ${result.error}`);
 		}
+	}
+
+	function handleExport(event: MouseEvent, runId: string) {
+		event.stopPropagation();
+		downloadRunReport(runId);
 	}
 
 	function handleRowKeydown(event: KeyboardEvent, runId: string) {
@@ -98,6 +103,19 @@
 									<path d="M8 8.5v3" stroke-linecap="round" />
 								</svg>
 							</button>
+							{#if run.status !== 'running'}
+								<button
+									type="button"
+									aria-label="Export run report"
+									title="Export — download a markdown report of this run"
+									onclick={(e) => handleExport(e, run.id)}
+									class="rounded p-0.5 text-fg-3 opacity-0 hover:bg-surface-overlay hover:text-fg group-hover:opacity-100"
+								>
+									<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+										<path d="M8 2v9m0 0l3-3m-3 3L5 8M3 13h10" />
+									</svg>
+								</button>
+							{/if}
 							<button
 								type="button"
 								aria-label="Delete run"

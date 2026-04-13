@@ -1,6 +1,5 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { NodeData } from './workflow.svelte';
-import { loadWorkflow } from './workflow.svelte';
+import { type NodeData, loadWorkflow } from './workflow.svelte';
 import type { NodeStatus } from '$lib/types/nodes';
 
 export interface NodeRunResult {
@@ -11,6 +10,7 @@ export interface NodeRunResult {
 	output?: string;
 	error?: string;
 	retriesUsed?: number;
+	costUsd?: number;
 }
 
 export type RunStatus = 'running' | 'done' | 'error' | 'cancelled';
@@ -155,4 +155,82 @@ export function forkRun(runId: string): { success: true } | { success: false; er
 		nodes: run.snapshot.nodes,
 		edges: run.snapshot.edges
 	});
+}
+
+function formatTimestamp(ts: number): string {
+	const d = new Date(ts);
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function formatMs(ms: number): string {
+	if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+	return `${ms}ms`;
+}
+
+export function exportRunAsMarkdown(runId: string): string | null {
+	const run = runs.list.find((r) => r.id === runId);
+	if (!run) return null;
+
+	const nodeCount = Object.keys(run.results).length;
+	const duration = run.endedAt ? formatMs(run.endedAt - run.startedAt) : 'N/A';
+
+	const labelMap = new Map<string, string>();
+	for (const node of run.snapshot.nodes) {
+		labelMap.set(node.id, (node.data as NodeData).label ?? node.id);
+	}
+
+	const lines: string[] = [
+		'# Workflow Run Report',
+		'',
+		`**Run ID:** ${run.id}`,
+		`**Status:** ${run.status}`,
+		`**Started:** ${formatTimestamp(run.startedAt)}`,
+		`**Duration:** ${duration}`,
+		`**Nodes:** ${nodeCount}`
+	];
+
+	const totalCost = Object.values(run.results).reduce(
+		(sum, r) => sum + (r.costUsd ?? 0),
+		0
+	);
+	if (totalCost > 0) {
+		lines.push(`**Total Cost:** $${totalCost.toFixed(4)}`);
+	}
+
+	for (const result of Object.values(run.results)) {
+		const label = labelMap.get(result.nodeId) ?? result.nodeId;
+		const nodeDuration =
+			result.startedAt && result.endedAt
+				? formatMs(result.endedAt - result.startedAt)
+				: 'N/A';
+		const costStr = result.costUsd != null ? `$${result.costUsd.toFixed(4)}` : 'N/A';
+
+		lines.push('', '---', '');
+		lines.push(`## Node: ${label}`);
+		lines.push(`**Status:** ${result.status} | **Cost:** ${costStr} | **Duration:** ${nodeDuration}`);
+
+		if (result.error) {
+			lines.push('', '<error>', result.error, '</error>');
+		}
+		if (result.output) {
+			lines.push('', '<output>', result.output, '</output>');
+		}
+	}
+
+	lines.push('');
+	return lines.join('\n');
+}
+
+export function downloadRunReport(runId: string) {
+	const markdown = exportRunAsMarkdown(runId);
+	if (!markdown) return;
+
+	const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = `run-${runId.slice(0, 8)}.md`;
+	a.click();
+	URL.revokeObjectURL(url);
 }

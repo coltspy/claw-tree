@@ -9,49 +9,38 @@
 		importExampleWorkflow
 	} from '$lib/stores/library.svelte';
 
-	const EXAMPLES: { file: string; name: string; description: string }[] = [
-		{ file: 'hello-world', name: 'Hello World', description: 'Single node — verify setup' },
-		{
-			file: 'multi-agent-review',
-			name: 'Multi-Agent Review',
-			description: 'Parallel security + quality agents -> merge'
-		},
-		{
-			file: 'full-audit-pipeline',
-			name: 'Full Audit Pipeline',
-			description: 'Triple parallel audit + conditional triage'
-		},
-		{
-			file: 'research-synthesize',
-			name: 'Research & Synthesize',
-			description: 'Fan-out 3 perspectives -> synthesize'
-		},
-		{
-			file: 'plan-then-audit',
-			name: 'Plan then Audit',
-			description: 'Plan -> Security -> Summarize -> Pause'
-		},
-		{
-			file: 'test-gate',
-			name: 'Test Gate',
-			description: 'Test -> Review -> conditional branch'
-		},
-		{
-			file: 'pr-review',
-			name: 'PR Review',
-			description: 'Plan -> Review -> Security -> Verdict'
-		},
-		{
-			file: 'refactor-plan',
-			name: 'Refactor Plan',
-			description: 'Map repo -> Plan -> Review -> Approve'
-		},
-		{
-			file: 'dep-audit',
-			name: 'Dependency Audit',
-			description: 'Inventory -> CVE scan -> Action list'
-		}
+	interface Example {
+		file: string;
+		name: string;
+		description: string;
+		nodes: number;
+		parallel: boolean;
+		category: string;
+	}
+
+	const EXAMPLES: Example[] = [
+		{ file: 'hello-world', name: 'Hello World', description: 'Single node that verifies your API key works. Start here.', nodes: 1, parallel: false, category: 'Getting Started' },
+		{ file: 'multi-agent-review', name: 'Multi-Agent Review', description: 'Two agents review code in parallel, then merge findings.', nodes: 6, parallel: true, category: 'Code Review' },
+		{ file: 'pr-review', name: 'PR Review', description: 'Plan, review, security check, then deliver a verdict.', nodes: 5, parallel: false, category: 'Code Review' },
+		{ file: 'full-audit-pipeline', name: 'Full Audit Pipeline', description: 'Security, quality, and dependency audits run in parallel with conditional triage.', nodes: 8, parallel: true, category: 'Security & Audit' },
+		{ file: 'dep-audit', name: 'Dependency Audit', description: 'Inventory dependencies, scan for CVEs, then generate an action list.', nodes: 4, parallel: false, category: 'Security & Audit' },
+		{ file: 'plan-then-audit', name: 'Plan then Audit', description: 'Plan first, then security audit, summarize, and pause for approval.', nodes: 4, parallel: false, category: 'Security & Audit' },
+		{ file: 'research-synthesize', name: 'Research & Synthesize', description: 'Three perspectives research a topic, then synthesize into one brief.', nodes: 7, parallel: true, category: 'Research' },
+		{ file: 'test-gate', name: 'Test Gate', description: 'Run tests, review results, then branch based on pass/fail.', nodes: 5, parallel: true, category: 'Testing' },
+		{ file: 'refactor-plan', name: 'Refactor Plan', description: 'Map the repo, plan refactoring, review the plan, then approve.', nodes: 4, parallel: false, category: 'Refactoring' },
+		{ file: 'full-stack-ship', name: 'Full-Stack Ship Pipeline', description: '26-node production release pipeline: code quality, security, testing, and docs tracks converge into a staged deploy.', nodes: 26, parallel: true, category: 'Production' },
 	];
+
+	const CATEGORY_ORDER = ['Getting Started', 'Code Review', 'Security & Audit', 'Research', 'Testing', 'Refactoring', 'Production'];
+
+	const groupedExamples = $derived.by(() => {
+		const groups: { category: string; items: Example[] }[] = [];
+		for (const cat of CATEGORY_ORDER) {
+			const items = EXAMPLES.filter((e) => e.category === cat);
+			if (items.length > 0) groups.push({ category: cat, items });
+		}
+		return groups;
+	});
 
 	let editingId = $state<string | null>(null);
 	let editName = $state('');
@@ -191,18 +180,29 @@
 			<h3 class="mb-2 text-[11px] font-semibold tracking-widest text-fg-3 uppercase">
 				Examples
 			</h3>
-			<div class="flex flex-col gap-1">
-				{#each EXAMPLES as example (example.file)}
-					<button
-						type="button"
-						onclick={() => loadExample(example.file, example.name)}
-						class="flex flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-overlay"
-					>
-						<span class="text-[11px] font-medium text-fg-2">{example.name}</span>
-						<span class="text-[11px] text-fg-3">{example.description}</span>
-					</button>
-				{/each}
-			</div>
+			{#each groupedExamples as group, i (group.category)}
+				<div class="text-[10px] font-semibold tracking-widest text-fg-muted uppercase mb-1 px-2 {i > 0 ? 'mt-3' : ''}">
+					{group.category}
+				</div>
+				<div class="flex flex-col gap-1">
+					{#each group.items as example (example.file)}
+						<button
+							type="button"
+							onclick={() => loadExample(example.file, example.name)}
+							class="flex flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-overlay"
+						>
+							<div class="flex items-center gap-1.5">
+								<span class="text-[11px] font-medium text-fg-2">{example.name}</span>
+								<span class="text-[10px] text-fg-muted bg-surface px-1.5 py-0.5 rounded-full">{example.nodes} nodes</span>
+								{#if example.parallel}
+									<span class="text-[10px] text-fg-muted bg-surface px-1.5 py-0.5 rounded-full">parallel</span>
+								{/if}
+							</div>
+							<span class="text-[11px] text-fg-3">{example.description}</span>
+						</button>
+					{/each}
+				</div>
+			{/each}
 		</div>
 	</div>
 </aside>

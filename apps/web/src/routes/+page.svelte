@@ -7,6 +7,7 @@
 	import OutputDrawer from '$lib/components/OutputDrawer.svelte';
 	import ApprovalPanel from '$lib/components/ApprovalPanel.svelte';
 	import ChatPanel from '$lib/components/ChatPanel.svelte';
+	import ShortcutsModal from '$lib/components/ShortcutsModal.svelte';
 	import {
 		workflow,
 		setHistoryHooks,
@@ -24,6 +25,7 @@
 	import { settings } from '$lib/stores/settings.svelte';
 
 	let bannerDismissed = $state(false);
+	let shortcutsOpen = $state(false);
 	const showSetupBanner = $derived(
 		!bannerDismissed &&
 		settings.anthropicApiKey.length === 0 &&
@@ -94,6 +96,11 @@
 
 		if (isEditable(event.target)) return;
 
+		if (event.key === '?') {
+			event.preventDefault();
+			shortcutsOpen = !shortcutsOpen;
+			return;
+		}
 		if (event.key === 'Delete' || event.key === 'Backspace') {
 			event.preventDefault();
 			deleteSelection();
@@ -145,4 +152,5 @@
 		<NodePanel />
 	</div>
 	<ApprovalPanel />
+	<ShortcutsModal open={shortcutsOpen} onClose={() => (shortcutsOpen = false)} />
 </div>

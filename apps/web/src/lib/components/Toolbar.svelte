@@ -1,7 +1,7 @@
 <script lang="ts">
 	import StatusIndicator from './StatusIndicator.svelte';
 	import SettingsModal from './SettingsModal.svelte';
-	import { workflow, clearWorkflow, loadWorkflow } from '$lib/stores/workflow.svelte';
+	import { workflow, clearWorkflow, loadWorkflow, type NodeData } from '$lib/stores/workflow.svelte';
 	import { execution, runWorkflow, cancelWorkflow } from '$lib/stores/execution.svelte';
 	import { settings, saveSettings } from '$lib/stores/settings.svelte';
 	import { ui, toggleChat, toggleTheme } from '$lib/stores/ui.svelte';
@@ -22,6 +22,7 @@
 	);
 
 	function runIgnoringCache() {
+		requestNotificationPermission();
 		bypassCacheForNextRun();
 		void runWorkflow();
 	}
@@ -37,6 +38,16 @@
 	const nodeCount = $derived(workflow.nodes.length);
 	const canRun = $derived(nodeCount > 0 && !execution.running);
 	const hasErrors = $derived(execution.errors.length > 0);
+
+	const totalCost = $derived(
+		workflow.nodes.reduce((sum, n) => sum + ((n.data as NodeData).costUsd ?? 0), 0)
+	);
+
+	function requestNotificationPermission() {
+		if ('Notification' in window && Notification.permission === 'default') {
+			Notification.requestPermission();
+		}
+	}
 
 	const HEALTH_POLL_MS = 10_000;
 
@@ -122,7 +133,7 @@
 		{:else}
 			<button
 				type="button"
-				onclick={runWorkflow}
+				onclick={() => { requestNotificationPermission(); runWorkflow(); }}
 				disabled={!canRun}
 				class="btn-push cursor-pointer rounded-md bg-accent px-4 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
 			>
@@ -147,6 +158,10 @@
 					</div>
 				</div>
 			</div>
+		{/if}
+
+		{#if totalCost > 0}
+			<span class="font-mono text-[11px] text-fg-3{execution.running ? ' animate-pulse' : ''}">${totalCost < 0.01 ? totalCost.toFixed(4) : totalCost.toFixed(2)}</span>
 		{/if}
 
 		<div class="mx-1.5 h-4 w-px bg-border"></div>
