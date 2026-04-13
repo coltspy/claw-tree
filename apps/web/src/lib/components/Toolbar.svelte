@@ -6,7 +6,7 @@
 	import { settings, saveSettings } from '$lib/stores/settings.svelte';
 	import { ui, toggleChat, toggleTheme } from '$lib/stores/ui.svelte';
 	import { bypassCacheForNextRun } from '$lib/stores/cache.svelte';
-	import type { Compression } from '$lib/types/nodes';
+	import type { ClawPermissionMode, Compression } from '$lib/types/nodes';
 
 	const cavemanOptions: { value: Compression; label: string; hint: string }[] = [
 		{ value: 'off', label: 'Off', hint: 'Full verbose output' },
@@ -14,11 +14,22 @@
 		{ value: 'full', label: 'Full', hint: 'Maximum brevity' }
 	];
 
+	const permissionOptions: { value: ClawPermissionMode; label: string; hint: string }[] = [
+		{ value: 'read-only', label: 'Read', hint: 'Can only read files' },
+		{ value: 'workspace-write', label: 'Write', hint: 'Can read and write files' },
+		{ value: 'danger-full-access', label: 'Full', hint: 'Full system access' }
+	];
+
 	let cavemanOpen = $state(false);
+	let permissionOpen = $state(false);
 	let runMenuOpen = $state(false);
 
 	const cavemanLabel = $derived(
 		cavemanOptions.find((o) => o.value === settings.globalCompression)?.label ?? 'Off'
+	);
+
+	const permissionLabel = $derived(
+		permissionOptions.find((o) => o.value === settings.defaultPermissionMode)?.label ?? 'Write'
 	);
 
 	function runIgnoringCache() {
@@ -205,6 +216,50 @@
 					<div class="rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-semibold whitespace-nowrap text-fg shadow-xl">
 						Reduces output tokens on intermediate nodes.
 						<a href="https://github.com/JuliusBrussee/caveman" target="_blank" rel="noopener" class="ml-1 font-bold text-accent underline decoration-accent/40">Caveman</a>
+						<div class="absolute top-0.5 left-1/2 -translate-x-1/2 border-[5px] border-transparent border-b-surface-raised"></div>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<div class="group/perm relative">
+			<button
+				type="button"
+				onclick={() => (permissionOpen = !permissionOpen)}
+				class="flex cursor-pointer items-center gap-1.5 rounded-md bg-surface-overlay px-2.5 py-1.5 text-xs transition-colors hover:brightness-110"
+			>
+				<span class="text-fg-3">Permissions</span>
+				<span class="font-medium {settings.defaultPermissionMode === 'danger-full-access' ? 'text-red-400' : settings.defaultPermissionMode === 'read-only' ? 'text-fg-muted' : 'text-accent'}">{permissionLabel}</span>
+				<svg class="h-3 w-3 text-fg-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+					<path d="M4 6l4 4 4-4" />
+				</svg>
+			</button>
+			{#if permissionOpen}
+				<button
+					type="button"
+					aria-label="Close menu"
+					onclick={() => (permissionOpen = false)}
+					class="fixed inset-0 z-40 cursor-default"
+				></button>
+				<div class="absolute top-full left-0 z-50 mt-1.5 w-48 overflow-hidden rounded-lg border border-border bg-surface-raised shadow-xl">
+					{#each permissionOptions as opt (opt.value)}
+						<button
+							type="button"
+							onclick={() => { saveSettings({ defaultPermissionMode: opt.value }); permissionOpen = false; }}
+							class="flex w-full cursor-pointer flex-col px-3.5 py-2.5 text-left transition-colors {settings.defaultPermissionMode === opt.value
+								? 'bg-accent-dim'
+								: 'hover:bg-surface-overlay'}"
+						>
+							<span class="text-xs font-semibold {settings.defaultPermissionMode === opt.value ? 'text-accent' : 'text-fg'}">{opt.label}</span>
+							<span class="text-[11px] {settings.defaultPermissionMode === opt.value ? 'text-accent/60' : 'text-fg-3'}">{opt.hint}</span>
+						</button>
+					{/each}
+				</div>
+			{/if}
+			{#if !permissionOpen}
+				<div class="pointer-events-none absolute top-full left-1/2 z-50 -translate-x-1/2 pt-2.5 opacity-0 transition-opacity group-hover/perm:pointer-events-auto group-hover/perm:opacity-100">
+					<div class="rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-semibold whitespace-nowrap text-fg shadow-xl">
+						Default permission mode for new nodes
 						<div class="absolute top-0.5 left-1/2 -translate-x-1/2 border-[5px] border-transparent border-b-surface-raised"></div>
 					</div>
 				</div>
