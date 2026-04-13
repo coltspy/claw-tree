@@ -514,6 +514,7 @@ async function streamNode(
 			resumeSessionId,
 			anthropicApiKey: settings.anthropicApiKey || undefined,
 			openaiApiKey: settings.openaiApiKey || undefined,
+			zaiApiKey: settings.zaiApiKey || undefined,
 			workspacePath: settings.workspacePath || undefined
 		}),
 		signal

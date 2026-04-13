@@ -2,8 +2,7 @@
 
 A visual workflow builder and chat interface for the **claw** agent CLI
 (a Rust reimplementation of Claude Code). Talk to the agent in a terminal
-or in your browser, design multi-step workflows as graphs, run them end-to-end,
-and let nodes share memory via session continuity.
+or in your browser, go a
 
 claw-tree is a monorepo containing:
 

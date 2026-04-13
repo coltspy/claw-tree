@@ -5,6 +5,7 @@ const STORAGE_KEY = 'claw-tree:settings';
 export interface Settings {
 	anthropicApiKey: string;
 	openaiApiKey: string;
+	zaiApiKey: string;
 	defaultModel: string;
 	globalCompression: Compression;
 	workspacePath: string;
@@ -13,6 +14,7 @@ export interface Settings {
 const DEFAULTS: Settings = {
 	anthropicApiKey: '',
 	openaiApiKey: '',
+	zaiApiKey: '',
 	defaultModel: 'claude-sonnet-4-6',
 	globalCompression: 'off',
 	workspacePath: ''
@@ -50,5 +52,5 @@ export function clearSettings() {
 }
 
 export function hasAnyApiKey(): boolean {
-	return settings.anthropicApiKey.length > 0 || settings.openaiApiKey.length > 0;
+	return settings.anthropicApiKey.length > 0 || settings.openaiApiKey.length > 0 || settings.zaiApiKey.length > 0;
 }

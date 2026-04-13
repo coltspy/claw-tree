@@ -36,7 +36,8 @@
 		'claude-sonnet-4-6',
 		'claude-haiku-4-5',
 		'gpt-5',
-		'gpt-5-mini'
+		'gpt-5-mini',
+		'glm-5.1'
 	];
 
 	const failurePolicies: FailurePolicy[] = ['halt', 'skip', 'retry'];

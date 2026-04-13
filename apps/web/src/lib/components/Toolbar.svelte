@@ -15,6 +15,7 @@
 	];
 
 	let cavemanOpen = $state(false);
+	let runMenuOpen = $state(false);
 
 	const cavemanLabel = $derived(
 		cavemanOptions.find((o) => o.value === settings.globalCompression)?.label ?? 'Off'
@@ -114,43 +115,47 @@
 			<button
 				type="button"
 				onclick={cancelWorkflow}
-				class="btn-push btn-push-danger rounded-md bg-danger px-4 py-1.5 text-xs font-medium text-white"
+				class="btn-push btn-push-danger cursor-pointer rounded-md bg-danger px-4 py-1.5 text-xs font-medium text-white"
 			>
 				Cancel
 			</button>
 		{:else}
-			<div class="btn-push flex items-center rounded-md bg-accent" class:btn-push-disabled={!canRun}>
-				<button
-					type="button"
-					onclick={runWorkflow}
-					disabled={!canRun}
-					class="rounded-l-md px-4 py-1.5 text-xs font-medium text-white hover:bg-accent-hover/20 disabled:cursor-not-allowed disabled:opacity-40"
-				>
-					Run
-				</button>
-				<span class="my-1.5 w-px self-stretch bg-white/20"></span>
+			<button
+				type="button"
+				onclick={runWorkflow}
+				disabled={!canRun}
+				class="btn-push cursor-pointer rounded-md bg-accent px-4 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+			>
+				Run
+			</button>
+			<div class="group relative">
 				<button
 					type="button"
 					onclick={runIgnoringCache}
 					disabled={!canRun}
-					title="Run ignoring cache (Ctrl+Shift+Enter)"
 					aria-label="Run ignoring cache"
-					class="rounded-r-md px-2 py-1.5 text-xs font-medium text-white hover:bg-accent-hover/20 disabled:cursor-not-allowed disabled:opacity-40"
+					class="btn-push cursor-pointer rounded-md bg-accent p-1.5 text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 3v3H10.5" />
 					</svg>
 				</button>
+				<div class="pointer-events-none absolute top-full left-1/2 z-50 -translate-x-1/2 pt-2.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+					<div class="rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-semibold whitespace-nowrap text-fg shadow-xl">
+						Run ignoring cache
+						<div class="absolute top-0.5 left-1/2 -translate-x-1/2 border-[5px] border-transparent border-b-surface-raised"></div>
+					</div>
+				</div>
 			</div>
 		{/if}
 
 		<div class="mx-1.5 h-4 w-px bg-border"></div>
 
-		<div class="relative">
+		<div class="group/caveman relative">
 			<button
 				type="button"
 				onclick={() => (cavemanOpen = !cavemanOpen)}
-				class="flex items-center gap-1.5 rounded-md bg-surface-overlay px-2.5 py-1.5 text-xs transition-colors hover:brightness-110"
+				class="flex cursor-pointer items-center gap-1.5 rounded-md bg-surface-overlay px-2.5 py-1.5 text-xs transition-colors hover:brightness-110"
 			>
 				<span class="text-fg-3">Caveman</span>
 				<span class="font-medium {settings.globalCompression === 'off' ? 'text-fg-muted' : 'text-accent'}">{cavemanLabel}</span>
@@ -165,19 +170,28 @@
 					onclick={() => (cavemanOpen = false)}
 					class="fixed inset-0 z-40 cursor-default"
 				></button>
-				<div class="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-surface-raised shadow-xl">
+				<div class="absolute top-full left-0 z-50 mt-1.5 w-48 overflow-hidden rounded-lg border border-border bg-surface-raised shadow-xl">
 					{#each cavemanOptions as opt (opt.value)}
 						<button
 							type="button"
 							onclick={() => { saveSettings({ globalCompression: opt.value }); cavemanOpen = false; }}
-							class="flex w-full flex-col px-3 py-2 text-left transition-colors first:rounded-t-lg last:rounded-b-lg {settings.globalCompression === opt.value
+							class="flex w-full cursor-pointer flex-col px-3.5 py-2.5 text-left transition-colors {settings.globalCompression === opt.value
 								? 'bg-accent-dim'
 								: 'hover:bg-surface-overlay'}"
 						>
-							<span class="text-xs font-medium {settings.globalCompression === opt.value ? 'text-accent' : 'text-fg'}">{opt.label}</span>
+							<span class="text-xs font-semibold {settings.globalCompression === opt.value ? 'text-accent' : 'text-fg'}">{opt.label}</span>
 							<span class="text-[11px] {settings.globalCompression === opt.value ? 'text-accent/60' : 'text-fg-3'}">{opt.hint}</span>
 						</button>
 					{/each}
+				</div>
+			{/if}
+			{#if !cavemanOpen}
+				<div class="pointer-events-none absolute top-full left-1/2 z-50 -translate-x-1/2 pt-2.5 opacity-0 transition-opacity group-hover/caveman:pointer-events-auto group-hover/caveman:opacity-100">
+					<div class="rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs font-semibold whitespace-nowrap text-fg shadow-xl">
+						Reduces output tokens on intermediate nodes.
+						<a href="https://github.com/JuliusBrussee/caveman" target="_blank" rel="noopener" class="ml-1 font-bold text-accent underline decoration-accent/40">Caveman</a>
+						<div class="absolute top-0.5 left-1/2 -translate-x-1/2 border-[5px] border-transparent border-b-surface-raised"></div>
+					</div>
 				</div>
 			{/if}
 		</div>

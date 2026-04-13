@@ -6,67 +6,73 @@
 		type: NodeType;
 		label: string;
 		description: string;
-		accent: string;
-		iconPath: string;
+		color: string;
+		icon: string;
 	}
 
 	const nodeOptions: NodeOption[] = [
 		{
+			type: 'agent',
+			label: 'Run Agent',
+			description: 'Execute a task',
+			color: 'text-orange-400',
+			icon: 'M13 10V3L4 14h7v7l9-11h-7z'
+		},
+		{
 			type: 'plan',
 			label: 'Plan',
-			description: 'Think step by step first',
-			accent: 'bg-indigo-500/10 text-indigo-300 ring-indigo-900/40',
-			iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'
+			description: 'Think step by step',
+			color: 'text-indigo-400',
+			icon: 'M9 6h11M9 12h11M9 18h11M5 6h.01M5 12h.01M5 18h.01'
 		},
 		{
 			type: 'security',
 			label: 'Security',
-			description: 'Audit for vulnerabilities',
-			accent: 'bg-red-500/10 text-red-300 ring-red-900/40',
-			iconPath: 'M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z'
+			description: 'Audit for vulns',
+			color: 'text-red-400',
+			icon: 'M12 3l7 4v5c0 5.25-3.5 9.24-7 10-3.5-.76-7-4.75-7-10V7l7-4z'
 		},
 		{
 			type: 'test',
 			label: 'Test',
-			description: 'Run and report tests',
-			accent: 'bg-sky-500/10 text-sky-300 ring-sky-900/40',
-			iconPath: 'M9 11l3 3 8-8M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h7'
+			description: 'Run test suite',
+			color: 'text-sky-400',
+			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
 		},
 		{
 			type: 'review',
 			label: 'Review',
-			description: 'Review prior output',
-			accent: 'bg-violet-500/10 text-violet-300 ring-violet-900/40',
-			iconPath:
-				'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 100 6 3 3 0 000-6z'
+			description: 'Review output',
+			color: 'text-violet-400',
+			icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
 		},
 		{
 			type: 'confirm',
 			label: 'Confirm',
-			description: 'Verify with a 2nd model',
-			accent: 'bg-emerald-500/10 text-emerald-300 ring-emerald-900/40',
-			iconPath: 'M9 12l2 2 4-4M20 12a8 8 0 11-16 0 8 8 0 0116 0z'
+			description: 'Verify with 2nd model',
+			color: 'text-emerald-400',
+			icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z'
 		},
 		{
 			type: 'summarize',
 			label: 'Summarize',
-			description: 'Condense into a brief',
-			accent: 'bg-teal-500/10 text-teal-300 ring-teal-900/40',
-			iconPath: 'M4 6h16M4 10h10M4 14h6M4 18h2'
+			description: 'Condense output',
+			color: 'text-teal-400',
+			icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
 		},
 		{
 			type: 'custom',
 			label: 'Custom',
 			description: 'Freeform prompt',
-			accent: 'bg-zinc-500/10 text-zinc-300 ring-zinc-700',
-			iconPath: 'M16 18l6-6-6-6M8 6l-6 6 6 6'
+			color: 'text-zinc-400',
+			icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4'
 		},
 		{
 			type: 'pause',
 			label: 'Pause',
 			description: 'Wait for approval',
-			accent: 'bg-amber-500/10 text-amber-300 ring-amber-900/40',
-			iconPath: 'M10 9v6M14 9v6M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+			color: 'text-amber-400',
+			icon: 'M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11'
 		}
 	];
 
@@ -78,51 +84,39 @@
 </script>
 
 <aside
-	class="flex w-64 shrink-0 flex-col border-r border-border bg-surface-raised"
+	class="flex w-56 shrink-0 flex-col border-r border-border bg-surface-raised"
 >
-	<div class="px-5 pt-5 pb-3">
-		<h2 class="text-xs font-medium tracking-wide text-fg-3">Nodes</h2>
-		<p class="mt-0.5 text-[11px] text-fg-muted">Drag onto canvas or click to add</p>
+	<div class="px-4 pt-4 pb-2">
+		<h2 class="text-xs font-semibold text-fg-2">Nodes</h2>
 	</div>
 
-	<div class="flex flex-col gap-0.5 px-4 pb-3">
+	<div class="flex flex-col gap-1 overflow-y-auto px-3 pb-3">
 		{#each nodeOptions as option (option.type)}
 			<button
 				type="button"
 				draggable="true"
 				ondragstart={(e) => handleDragStart(e, option.type)}
 				onclick={() => addNode(option.type)}
-				class="group flex cursor-grab items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-overlay active:cursor-grabbing active:bg-surface-overlay"
+				class="group flex cursor-grab items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2.5 text-left transition-all hover:border-fg-muted hover:shadow-sm active:cursor-grabbing active:scale-[0.98]"
 			>
-				<div
-					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md ring-1 {option.accent}"
+				<svg
+					class="h-4 w-4 shrink-0 {option.color}"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
 				>
-					<svg
-						class="h-[18px] w-[18px]"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.75"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path d={option.iconPath} />
-					</svg>
-				</div>
+					<path d={option.icon} />
+				</svg>
 				<div class="min-w-0 flex-1">
-					<div class="truncate text-[13px] font-medium text-fg">{option.label}</div>
-					<div class="truncate text-[11px] text-fg-3 group-hover:text-fg-2">
+					<div class="text-xs font-medium text-fg">{option.label}</div>
+					<div class="text-[11px] text-fg-muted group-hover:text-fg-3">
 						{option.description}
 					</div>
 				</div>
 			</button>
 		{/each}
-	</div>
-
-	<div class="mt-auto border-t border-border-subtle px-5 py-3">
-		<p class="text-[11px] leading-relaxed text-fg-muted">
-			Drag between handles to connect nodes. Drop off a handle onto empty canvas to spawn a
-			connected node.
-		</p>
 	</div>
 </aside>

@@ -7,10 +7,39 @@
 		type NodeTypes
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
-	import { workflow, addNodeAt } from '$lib/stores/workflow.svelte';
+	import { workflow, addNodeAt, type NodeData } from '$lib/stores/workflow.svelte';
 	import { canvas } from '$lib/stores/canvas.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
-	import type { NodeType } from '$lib/types/nodes';
+	import type { NodeType, NodeStatus } from '$lib/types/nodes';
+
+	const edgeColors: Record<NodeStatus, string> = {
+		idle: '',
+		queued: 'stroke: #60a5fa;',
+		running: 'stroke: #fbbf24; stroke-dasharray: 5; animation: dash 0.5s linear infinite;',
+		done: 'stroke: #34d399;',
+		skipped: '',
+		error: 'stroke: #f87171;',
+		cancelled: ''
+	};
+
+	$effect(() => {
+		const nodeMap = new Map(workflow.nodes.map((n) => [n.id, n.data as NodeData]));
+		let changed = false;
+		const updated = workflow.edges.map((e) => {
+			const sourceData = nodeMap.get(e.source);
+			const status = sourceData?.status ?? 'idle';
+			const newStyle = edgeColors[status];
+			const newAnimated = status === 'running';
+			if (e.style !== newStyle || e.animated !== newAnimated) {
+				changed = true;
+				return { ...e, style: newStyle || undefined, animated: newAnimated };
+			}
+			return e;
+		});
+		if (changed) {
+			workflow.edges = updated;
+		}
+	});
 	import WorkflowNodeCard from './nodes/WorkflowNodeCard.svelte';
 	import CanvasBridge from './CanvasBridge.svelte';
 
@@ -19,6 +48,7 @@
 	};
 
 	const NODE_OPTIONS: { type: NodeType; label: string; color: string }[] = [
+		{ type: 'agent', label: 'Run Agent', color: 'text-orange-300' },
 		{ type: 'security', label: 'Security', color: 'text-red-300' },
 		{ type: 'test', label: 'Test', color: 'text-sky-300' },
 		{ type: 'review', label: 'Review', color: 'text-violet-300' },

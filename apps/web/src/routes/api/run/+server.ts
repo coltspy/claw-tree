@@ -25,6 +25,7 @@ interface RunBody {
 	resumeSessionId?: string;
 	anthropicApiKey?: string;
 	openaiApiKey?: string;
+	zaiApiKey?: string;
 	workspacePath?: string;
 }
 
@@ -90,6 +91,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const childEnv: NodeJS.ProcessEnv = { ...process.env };
 	if (body.anthropicApiKey) childEnv.ANTHROPIC_API_KEY = body.anthropicApiKey;
 	if (body.openaiApiKey) childEnv.OPENAI_API_KEY = body.openaiApiKey;
+	if (body.zaiApiKey) childEnv.ZAI_API_KEY = body.zaiApiKey;
 
 	const cwd = body.workspacePath || process.env.CLAW_TREE_WORKSPACE || undefined;
 

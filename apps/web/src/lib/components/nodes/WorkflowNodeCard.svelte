@@ -9,6 +9,11 @@
 	const node = $derived(data as NodeData);
 
 	const typeStyles: Record<NodeType, { accent: string; label: string; ring: string }> = {
+		agent: {
+			accent: 'bg-orange-500/15 text-orange-300 border-orange-900/60',
+			label: 'AGENT',
+			ring: 'shadow-orange-900/40'
+		},
 		security: {
 			accent: 'bg-red-500/15 text-red-300 border-red-900/60',
 			label: 'SECURITY',
@@ -67,6 +72,16 @@
 		cancelled: 'bg-zinc-500'
 	};
 
+	const statusBorder: Record<NodeStatus, string> = {
+		idle: 'border-border',
+		queued: 'border-blue-500/50 shadow-blue-900/20',
+		running: 'border-amber-500/70 shadow-amber-500/10',
+		done: 'border-emerald-500/50 shadow-emerald-900/20',
+		skipped: 'border-border',
+		error: 'border-red-500/60 shadow-red-900/20',
+		cancelled: 'border-border'
+	};
+
 	const style = $derived(typeStyles[node.nodeType]);
 	const dot = $derived(statusDot[node.status]);
 	const promptPreview = $derived(
@@ -85,8 +100,11 @@
 
 <div
 	class="group relative w-60 rounded-lg border bg-surface-raised shadow-lg transition-all {selected
-		? 'border-accent shadow-emerald-900/40'
-		: `border-border ${style.ring}`}"
+		? 'border-accent shadow-accent/20'
+		: node.status === 'idle' || node.status === 'cancelled' || node.status === 'skipped'
+			? `${statusBorder[node.status]} ${style.ring}`
+			: statusBorder[node.status]}"
+	class:animate-pulse={node.status === 'running'}
 >
 	<Handle
 		type="target"

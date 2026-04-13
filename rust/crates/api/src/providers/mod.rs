@@ -194,6 +194,15 @@ pub fn metadata_for_model(model: &str) -> Option<ProviderMetadata> {
             default_base_url: openai_compat::DEFAULT_DASHSCOPE_BASE_URL,
         });
     }
+    // Z.AI (GLM family). OpenAI-compatible endpoint at api.z.ai.
+    if canonical.starts_with("glm-") || canonical.starts_with("zai/") {
+        return Some(ProviderMetadata {
+            provider: ProviderKind::OpenAi,
+            auth_env: "ZAI_API_KEY",
+            base_url_env: "ZAI_BASE_URL",
+            default_base_url: openai_compat::DEFAULT_ZAI_BASE_URL,
+        });
+    }
     None
 }
 
@@ -219,6 +228,9 @@ pub fn detect_provider_kind(model: &str) -> ProviderKind {
     }
     if openai_compat::has_api_key("XAI_API_KEY") {
         return ProviderKind::Xai;
+    }
+    if openai_compat::has_api_key("ZAI_API_KEY") {
+        return ProviderKind::OpenAi;
     }
     // Last resort: if OPENAI_BASE_URL is set without OPENAI_API_KEY (some
     // local providers like Ollama don't require auth), still route there.

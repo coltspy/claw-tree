@@ -1,4 +1,5 @@
 export type NodeType =
+	| 'agent'
 	| 'security'
 	| 'test'
 	| 'review'

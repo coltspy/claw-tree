@@ -52,6 +52,18 @@ const MODEL_OVERRIDES: Partial<Record<NodeType, string>> = {
 };
 
 const NODE_DEFAULTS: Record<NodeType, { label: string; prompt: string }> = {
+	agent: {
+		label: 'Run Agent',
+		prompt: `You are an autonomous agent. Complete the task described below.
+
+<task>
+{{previous.output}}
+</task>
+
+Work through the task step by step. Use the tools available to you — read files,
+write code, run commands, search the web. When done, output a summary of what
+you did and any results.`
+	},
 	security: {
 		label: 'Security Scan',
 		prompt: `You are a senior application security engineer. Audit the current working directory for security issues.

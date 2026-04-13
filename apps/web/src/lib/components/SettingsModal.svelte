@@ -11,19 +11,23 @@
 
 	let anthropicKey = $state('');
 	let openaiKey = $state('');
+	let zaiKey = $state('');
 	let defaultModel = $state('claude-sonnet-4-6');
 	let workspacePath = $state('');
 	let showAnthropic = $state(false);
 	let showOpenai = $state(false);
+	let showZai = $state(false);
 
 	$effect(() => {
 		if (open) {
 			anthropicKey = settings.anthropicApiKey;
 			openaiKey = settings.openaiApiKey;
+			zaiKey = settings.zaiApiKey;
 			defaultModel = settings.defaultModel;
 			workspacePath = settings.workspacePath;
 			showAnthropic = false;
 			showOpenai = false;
+			showZai = false;
 		}
 	});
 
@@ -31,6 +35,7 @@
 		saveSettings({
 			anthropicApiKey: anthropicKey.trim(),
 			openaiApiKey: openaiKey.trim(),
+			zaiApiKey: zaiKey.trim(),
 			defaultModel,
 			workspacePath: workspacePath.trim()
 		});
@@ -153,8 +158,41 @@
 							{showOpenai ? 'hide' : 'show'}
 						</button>
 					</div>
-					<p class="mt-1 text-[10px] text-fg-muted">
+					<p class="mt-1 text-[11px] text-fg-muted">
 						Only needed for gpt-* models.
+					</p>
+				</div>
+
+				<div>
+					<div class="mb-1.5 flex items-center justify-between">
+						<label for="zai-key" class="text-[11px] font-medium text-fg-2">
+							Z.AI API key
+							<span class="ml-1 font-normal text-fg-muted">(optional)</span>
+						</label>
+						{#if settings.zaiApiKey}
+							<span class="font-mono text-[10px] text-accent">
+								saved: {mask(settings.zaiApiKey)}
+							</span>
+						{/if}
+					</div>
+					<div class="relative">
+						<input
+							id="zai-key"
+							type={showZai ? 'text' : 'password'}
+							placeholder="your-api-key"
+							bind:value={zaiKey}
+							class="w-full rounded border border-border bg-surface px-2.5 py-1.5 pr-16 font-mono text-xs text-fg focus:border-accent focus:outline-none"
+						/>
+						<button
+							type="button"
+							onclick={() => (showZai = !showZai)}
+							class="absolute inset-y-0 right-0 px-2 text-[10px] text-fg-3 hover:text-fg-2"
+						>
+							{showZai ? 'hide' : 'show'}
+						</button>
+					</div>
+					<p class="mt-1 text-[11px] text-fg-muted">
+						Only needed for glm-* models.
 					</p>
 				</div>
 
@@ -172,6 +210,7 @@
 						<option value="claude-haiku-4-5">claude-haiku-4-5</option>
 						<option value="gpt-5">gpt-5</option>
 						<option value="gpt-5-mini">gpt-5-mini</option>
+						<option value="glm-5.1">glm-5.1 (Z.AI)</option>
 					</select>
 				</div>
 
