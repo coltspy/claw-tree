@@ -9,6 +9,7 @@ import type {
 	Compression
 } from '$lib/types/nodes';
 import { canvas } from './canvas.svelte';
+import { settings } from './settings.svelte';
 
 export interface NodeData extends Record<string, unknown> {
 	label: string;
@@ -252,8 +253,9 @@ export function addNodeAt(
 			label,
 			nodeType: type,
 			prompt,
-			model: MODEL_OVERRIDES[type] ?? DEFAULT_MODEL,
-			permissionMode: type === 'pause' ? undefined : DEFAULT_PERMISSION_MODE,
+			model: MODEL_OVERRIDES[type] ?? settings.defaultModel,
+			permissionMode: type === 'pause' ? undefined : settings.defaultPermissionMode,
+			resumeFromPrevious: type !== 'pause',
 			failurePolicy: 'halt',
 			status: 'idle'
 		}

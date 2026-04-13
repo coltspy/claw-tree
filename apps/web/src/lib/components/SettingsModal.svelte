@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { settings, saveSettings } from '$lib/stores/settings.svelte';
 	import { cacheSize, clearCache } from '$lib/stores/cache.svelte';
+	import { CLAW_PERMISSION_MODES, type ClawPermissionMode } from '$lib/types/nodes';
+
+	const permissionLabels: Record<ClawPermissionMode, string> = {
+		'read-only': 'Read only',
+		'workspace-write': 'Workspace write',
+		'danger-full-access': 'Full access'
+	};
 
 	interface Props {
 		open: boolean;
@@ -13,6 +20,7 @@
 	let openaiKey = $state('');
 	let zaiKey = $state('');
 	let defaultModel = $state('claude-sonnet-4-6');
+	let defaultPermission = $state<ClawPermissionMode>('workspace-write');
 	let workspacePath = $state('');
 	let showAnthropic = $state(false);
 	let showOpenai = $state(false);
@@ -24,6 +32,7 @@
 			openaiKey = settings.openaiApiKey;
 			zaiKey = settings.zaiApiKey;
 			defaultModel = settings.defaultModel;
+			defaultPermission = settings.defaultPermissionMode;
 			workspacePath = settings.workspacePath;
 			showAnthropic = false;
 			showOpenai = false;
@@ -37,6 +46,7 @@
 			openaiApiKey: openaiKey.trim(),
 			zaiApiKey: zaiKey.trim(),
 			defaultModel,
+			defaultPermissionMode: defaultPermission,
 			workspacePath: workspacePath.trim()
 		});
 		onClose();
@@ -211,6 +221,21 @@
 						<option value="gpt-5">gpt-5</option>
 						<option value="gpt-5-mini">gpt-5-mini</option>
 						<option value="glm-5.1">glm-5.1 (Z.AI)</option>
+					</select>
+				</div>
+
+				<div>
+					<label for="default-permission" class="mb-1.5 block text-[11px] font-medium text-fg-2">
+						Default permission mode
+					</label>
+					<select
+						id="default-permission"
+						bind:value={defaultPermission}
+						class="w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
+					>
+						{#each CLAW_PERMISSION_MODES as mode (mode)}
+							<option value={mode}>{permissionLabels[mode]}</option>
+						{/each}
 					</select>
 				</div>
 

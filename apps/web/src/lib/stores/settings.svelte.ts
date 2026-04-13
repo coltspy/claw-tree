@@ -1,4 +1,4 @@
-import type { Compression } from '$lib/types/nodes';
+import type { ClawPermissionMode, Compression } from '$lib/types/nodes';
 
 const STORAGE_KEY = 'claw-tree:settings';
 
@@ -7,6 +7,7 @@ export interface Settings {
 	openaiApiKey: string;
 	zaiApiKey: string;
 	defaultModel: string;
+	defaultPermissionMode: ClawPermissionMode;
 	globalCompression: Compression;
 	workspacePath: string;
 }
@@ -16,6 +17,7 @@ const DEFAULTS: Settings = {
 	openaiApiKey: '',
 	zaiApiKey: '',
 	defaultModel: 'claude-sonnet-4-6',
+	defaultPermissionMode: 'workspace-write',
 	globalCompression: 'off',
 	workspacePath: ''
 };
