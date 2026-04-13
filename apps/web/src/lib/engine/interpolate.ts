@@ -12,7 +12,8 @@ export function interpolatePrompt(
 	const byId = new Map(allNodes.map((n) => [n.id, n]));
 	const byLabel = new Map(allNodes.map((n) => [n.data.label, n]));
 	const currentIdx = executionOrder.findIndex((n) => n.id === currentNode.id);
-	const previous = currentIdx > 0 ? executionOrder[currentIdx - 1] : null;
+	const previousId = currentIdx > 0 ? executionOrder[currentIdx - 1]?.id : null;
+	const previous = previousId ? byId.get(previousId) ?? null : null;
 
 	return prompt.replace(REF_PATTERN, (_match, ref: string) => {
 		if (ref === 'previous') return previous?.data.output ?? '';

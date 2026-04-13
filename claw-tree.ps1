@@ -40,35 +40,37 @@ $serverJob = Start-Job -ScriptBlock {
     $env:HOST = '0.0.0.0'
     $env:PORT = $port
     $env:CLAW_TREE_WORKSPACE = $ws
-    npm run dev -- --port $port
+    npm run dev -- --host 0.0.0.0 --port $port
 } -ArgumentList $webDir, $Port, $workspace
 
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 3
 
-# Give it a moment to actually bind the port
-$maxTries = 20
+$maxTries = 40
 $ready = $false
 for ($i = 0; $i -lt $maxTries; $i++) {
     try {
-        $test = Invoke-WebRequest -Uri "http://127.0.0.1:$Port" -TimeoutSec 1 -UseBasicParsing
+        $test = Invoke-WebRequest -Uri "http://127.0.0.1:$Port" -TimeoutSec 2 -UseBasicParsing
         if ($test.StatusCode -eq 200) {
             $ready = $true
             break
         }
     } catch {
-        Start-Sleep -Milliseconds 500
+        Start-Sleep -Milliseconds 750
     }
 }
 
 if ($ready) {
     Write-Ok "dev server is ready"
+    if (-not $NoBrowser) {
+        Write-Step "Opening browser"
+        Start-Process "http://127.0.0.1:$Port"
+    }
 } else {
-    Write-Warn "dev server still starting (check job output with: Receive-Job $($serverJob.Id))"
-}
-
-if (-not $NoBrowser) {
-    Write-Step "Opening browser"
-    Start-Process "http://127.0.0.1:$Port"
+    Write-Warn "dev server still starting -- opening browser anyway"
+    Write-Warn "refresh the page once it loads"
+    if (-not $NoBrowser) {
+        Start-Process "http://127.0.0.1:$Port"
+    }
 }
 
 Write-Host ""

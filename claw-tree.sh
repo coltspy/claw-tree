@@ -53,7 +53,7 @@ export CLAW_TREE_WORKSPACE="$PWD"
 step "Starting SvelteKit dev server on port $port"
 ok "workspace: $CLAW_TREE_WORKSPACE"
 
-(cd "$web_dir" && HOST=0.0.0.0 PORT="$port" npm run dev -- --port "$port") &
+(cd "$web_dir" && PORT="$port" npm run dev -- --host 0.0.0.0 --port "$port") &
 server_pid=$!
 
 cleanup() {
@@ -64,28 +64,33 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Wait for dev server to bind
 ready=false
-for i in $(seq 1 20); do
+for i in $(seq 1 40); do
     if curl -sf "http://127.0.0.1:$port" >/dev/null 2>&1; then
         ready=true
         break
     fi
-    sleep 0.5
+    sleep 0.75
 done
 
-if $ready; then
-    ok "dev server is ready"
-else
-    warn "dev server still starting — check logs above"
-fi
-
-if ! $no_browser; then
-    step "Opening browser"
+open_browser() {
     if command -v open >/dev/null 2>&1; then
         open "http://127.0.0.1:$port"
     elif command -v xdg-open >/dev/null 2>&1; then
         xdg-open "http://127.0.0.1:$port"
+    fi
+}
+
+if $ready; then
+    ok "dev server is ready"
+    if ! $no_browser; then
+        step "Opening browser"
+        open_browser
+    fi
+else
+    warn "dev server still starting -- opening browser anyway, refresh once it loads"
+    if ! $no_browser; then
+        open_browser
     fi
 fi
 
